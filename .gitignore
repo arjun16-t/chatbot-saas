@@ -1,0 +1,21 @@
+# Environment
+.env
+venv/
+
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+media/
+
+# OS
+.DS_Store
+
+# Personal Files
+docs/
+*.odt
+
+# Migrations
+migrations/
+
+node_modules/
