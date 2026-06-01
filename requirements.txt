@@ -1,0 +1,6 @@
+pymupdf4llm
+langchain-text-splitters
+sentence-transformers
+qdrant-client
+groq
+python-dotenv
