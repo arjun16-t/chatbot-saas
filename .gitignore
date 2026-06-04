@@ -13,7 +13,7 @@ media/
 
 # Personal Files
 docs/
-*.odt
+*.odt*
 
 # Migrations
 migrations/
