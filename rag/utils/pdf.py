@@ -5,7 +5,6 @@ Handles file validation, text extraction, metadata management,
 and cleanup for the AthenaChat RAG ingestion pipeline.
 """
 
-import os
 import json
 import hashlib
 import re
@@ -15,7 +14,7 @@ from datetime import datetime
 from typing import Tuple, Optional
 
 import pymupdf4llm
-
+from docx import Document
 
 SUPPORTED_FORMATS = [".pdf", ".docx", ".txt", ".md"]
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
@@ -121,22 +120,17 @@ def extract_text(file_path: str) -> Tuple[str, list]:
     file = Path(file_path)
     extension = file.suffix
 
-    # PDF branch:
     if extension == '.pdf':
         return _extract_pdf(file_path)
+    
+    elif extension == '.docx':
+        return _extract_docx(file_path)
 
-    # DOCX branch:
-    # TODO: import docx
-    # TODO: open document, iterate doc.paragraphs
-    # TODO: join paragraph texts with "\n"
-    # TODO: return (full_text, [])
-
-    # TXT / MD branch:
-    # TODO: open and read file directly with utf-8 encoding
-    # TODO: return (full_text, [])
-
-    # TODO: raise ValueError for unsupported formats
-    pass
+    elif extension == '.txt' or extension == '.md':
+        return _extract_txt_md(file_path)
+    
+    else:
+        raise ValueError(f"Unsupported format '{extension}'. Accepted: {SUPPORTED_FORMATS}")
 
 
 def save_metadata(metadata: dict, storage_path: str) -> None:
@@ -162,11 +156,13 @@ def save_metadata(metadata: dict, storage_path: str) -> None:
     Returns:
         None
     """
-    # TODO: ensure parent directory of storage_path exists (use pathlib mkdir parents=True)
-    # TODO: add "saved_at" timestamp to metadata
-    # TODO: open storage_path in write mode
-    # TODO: json.dump(metadata, f, indent=2)
-    pass
+    obj = Path(storage_path)
+    obj.parent.mkdir(parents=True, exist_ok=True)
+    
+    metadata["saved_at"] = datetime.now().isoformat()
+
+    with open(storage_path, "w") as f:
+        json.dump(metadata, f, indent=2)
 
 
 def cleanup_on_failure(file_path: Optional[str], metadata_path: Optional[str]) -> None:
@@ -183,29 +179,52 @@ def cleanup_on_failure(file_path: Optional[str], metadata_path: Optional[str]) -
     Returns:
         None
     """
-    # TODO: if file_path is not None and file exists → delete it using os.remove()
-    # TODO: if metadata_path is not None and file exists → delete it using os.remove()
-    # TODO: print or log what was cleaned up (simple print is fine for Sprint 1)
-    pass
+    if file_path is not None:
+        Path(file_path).unlink(missing_ok=True)
+        print(f"Removed File: {file_path}")
+    
+    if metadata_path is not None:
+        Path(metadata_path).unlink(missing_ok=True)
+        print(f"Removed metadata: {metadata_path}")
+
 
 def _extract_pdf(file_path: str) -> Tuple[str, list]:
-    chunks = pymupdf4llm.to_markdown(file_path, page_chunks=True)
+    try:
+        chunks = pymupdf4llm.to_markdown(file_path, page_chunks=True)
 
-    full_text = ""
-    page_metadata:list[dict] = []
+        full_text = ""
+        page_metadata:list[dict] = []
 
-    for chunk in chunks:
-        full_text += chunk['text'] + "\n\n"
-        page_metadata.append({
-            "page": chunk.get("page", 0) + 1,  # 0-indexed → 1-indexed
-            "char_start": len(full_text),       # capture BEFORE appending
-            "char_end": len(full_text) + len(chunk['text'])
-        })
+        for chunk in chunks:
+            page_metadata.append({
+                "page": chunk.get("page", 0) + 1,  # 0-indexed → 1-indexed
+                "char_start": len(full_text),       # capture BEFORE appending
+                "char_end": len(full_text) + len(chunk['text'])
+            })
+            full_text += chunk['text'] + "\n\n"
 
-    return (full_text.strip(), page_metadata)
+        return (full_text.strip(), page_metadata)
+    except Exception as e:
+        raise RuntimeError(f"Extraction failed: {e}") from e
 
-def _extract_docx():
-    pass
+def _extract_docx(file_path: str) -> Tuple[str, list]:
+    try:
+        doc = Document(file_path)
 
-def _extract_txt_md():
-    pass
+        full_text = ""
+        for para in doc.paragraphs:
+            full_text += para.text + "\n\n"
+
+        return (full_text.strip(), [])
+    except Exception as e:
+        raise RuntimeError(f"Extraction failed: {e}") from e
+
+def _extract_txt_md(file_path: str) -> Tuple[str, list]:
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            full_text = f.read()
+        
+        return (full_text, [])
+    
+    except Exception as e:
+        raise RuntimeError(f"Extraction failed: {e}") from e
