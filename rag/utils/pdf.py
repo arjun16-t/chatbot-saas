@@ -16,8 +16,7 @@ from typing import Tuple, Optional
 import pymupdf4llm
 from docx import Document
 
-SUPPORTED_FORMATS = [".pdf", ".docx", ".txt", ".md"]
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+from config import SUPPORTED_FORMATS, MAX_FILE_SIZE_BYTES
 
 
 def validate_file(file_path: str) -> Tuple[bool, Optional[str]]:
