@@ -10,7 +10,7 @@ Model: configured via EMBEDDING_MODEL in config.py
 """
 
 from sentence_transformers import SentenceTransformer
-from config import EMBEDDING_MODEL
+from config import EMBEDDING_MODEL, DEBUG, Colors
 from typing import Optional
 
 
@@ -33,7 +33,16 @@ def _get_model() -> SentenceTransformer:
     """
     global _model
     if _model is None:
-        _model = SentenceTransformer(EMBEDDING_MODEL, trust_remote_code=True)
+        try:
+            _model = SentenceTransformer(EMBEDDING_MODEL, trust_remote_code=True)
+
+            if DEBUG:
+                print(f"{Colors.BLUE} Successfully Loaded: {_model} {Colors.END}")
+            
+        except Exception as e:
+            if DEBUG:
+                print(f"{Colors.RED} Failed to Load: {_model} {Colors.END}")
+            raise RuntimeError(f"Failed to load model '{EMBEDDING_MODEL}': {e}") from e
     
     return _model
 
@@ -57,17 +66,20 @@ def embed_text(text: str) -> list[float]:
 
     Raises:
         RuntimeError: If embedding fails, wrapping original exception.
-
-    Example:
-        >>> vec = embed_text("What are your opening hours?")
-        >>> print(len(vec))
-        512
     """
-    # TODO: call _get_model()
-    # TODO: call model.encode(text, convert_to_list=True)
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    # TODO: return vector as list[float]
-    pass
+    model: SentenceTransformer = _get_model()
+    try:
+        embed = model.encode(text, prompt_name="query", convert_to_list=True)
+
+        if DEBUG:
+            print(f"{Colors.BLUE} Successfully Embedded: {embed[:100]} {Colors.END}")
+        
+        return embed
+    
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
+        raise RuntimeError(f"Failed to embed: {e}")
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
@@ -100,10 +112,23 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
         >>> print(len(vecs[0]))    # dimensions per vector
         512
     """
-    # TODO: raise ValueError if texts is empty
-    # TODO: call _get_model()
-    # TODO: call model.encode(texts, convert_to_list=True, show_progress_bar=True)
-    # TODO: show_progress_bar=True is useful for large batches during ingestion
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    # TODO: return list of vectors
-    pass
+    if not texts:
+        raise ValueError("Requires list of str texts")
+    model: SentenceTransformer = _get_model()
+
+    try:
+        embeds = model.encode(
+            texts, prompt_name="passage", 
+            show_progress_bar=True, 
+            convert_to_list=True
+        )
+
+        if DEBUG:
+            print(f"{Colors.BLUE} Successfully Embedded the texts. {Colors.END}")
+        
+        return embeds
+    
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
+        raise RuntimeError(f"Failed to embed: {e}")
