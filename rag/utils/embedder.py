@@ -69,7 +69,7 @@ def embed_text(text: str) -> list[float]:
     """
     model: SentenceTransformer = _get_model()
     try:
-        embed = model.encode(text, prompt_name="query", convert_to_list=True)
+        embed = model.encode(text, task="retrieval", prompt_name="query", convert_to_list=True)
 
         if DEBUG:
             print(f"{Colors.BLUE} Successfully Embedded: {embed[:100]} {Colors.END}")
@@ -118,7 +118,8 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
 
     try:
         embeds = model.encode(
-            texts, prompt_name="passage", 
+            texts, task="retrieval",
+            prompt_name="query", 
             show_progress_bar=True, 
             convert_to_list=True
         )

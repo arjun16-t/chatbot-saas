@@ -10,27 +10,29 @@ Each client's chunks are isolated via client_id field in point payloads.
 
 # TODO (future): Implement Qdrant tiered multi-tenancy for high-traffic
 #                premium clients when traffic patterns warrant it.
+
+# TODO: jina-embeddings-v5-text-nano is CC BY-NC 4.0 (non-commercial)
+# Switch to bge-small-en-v1.5 (Apache 2.0) before commercial launch
+# or obtain commercial license from Jina AI
 """
 
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client.models import (
     VectorParams,
     Distance,
     PointStruct,
     Filter,
+    FilterSelector,
     FieldCondition,
     MatchValue,
     PayloadSchemaType,
+    SparseVectorParams,
+    HnswConfigDiff
 )
 from utils.embedder import embed_batch, embed_text
-from config import QDRANT_COLLECTION_NAME, EMBEDDING_MODEL
+from config import QDRANT_COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE, DEBUG, Colors
 from typing import Optional
 import uuid
-
-
-# Vector dimensionality — must match embedding model output
-# jina-embeddings-v5-text-nano → 512 dimensions
-VECTOR_SIZE = 512
 
 
 def get_or_create_collection(client: QdrantClient) -> None:
@@ -53,23 +55,42 @@ def get_or_create_collection(client: QdrantClient) -> None:
     Raises:
         RuntimeError: If collection creation or index creation fails.
     """
-    # TODO: check if collection exists: client.collection_exists(QDRANT_COLLECTION_NAME)
-    # TODO: if not exists, create collection:
-    #       client.create_collection(
-    #           collection_name=QDRANT_COLLECTION_NAME,
-    #           vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE)
-    #       )
-    # TODO: create payload index on "client_id" field:
-    #       client.create_payload_index(
-    #           collection_name=QDRANT_COLLECTION_NAME,
-    #           field_name="client_id",
-    #           field_schema=PayloadSchemaType.KEYWORD
-    #       )
-    # TODO: also create payload index on "doc_id" field (needed for remove_points)
-    # TODO: print confirmation message
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    try:
+        if not client.collection_exists(QDRANT_COLLECTION_NAME):
+            client.create_collection(
+                collection_name=QDRANT_COLLECTION_NAME,
+                vectors_config={
+                    "dense": VectorParams(
+                        size=VECTOR_SIZE,
+                        distance=Distance.COSINE
+                    )
+                },
+                sparse_vectors_config={
+                    "sparse": SparseVectorParams()
+                },
+                hnsw_config=HnswConfigDiff(
+                    m=16,
+                    ef_construct=100
+                )
+            )
+        
+            client.create_payload_index(
+                collection_name=QDRANT_COLLECTION_NAME,
+                field_name="client_id",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
+            client.create_payload_index(
+                collection_name=QDRANT_COLLECTION_NAME,
+                field_name="doc_id",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
 
+            if DEBUG:
+                print(f"{Colors.BLUE} Successfully Created the Collection: {QDRANT_COLLECTION_NAME} {Colors.END}")
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Failed to create collection {Colors.END}")
+        raise RuntimeError(f"Failed to create collection: {e}") from e
 
 def delete_collection(client: QdrantClient) -> None:
     """
@@ -90,16 +111,30 @@ def delete_collection(client: QdrantClient) -> None:
     Raises:
         RuntimeError: If deletion fails.
     """
-    # TODO: print warning message about destructive operation
-    # TODO: first confirmation: input("Are you sure? (yes/no): ")
-    # TODO: if not "yes" → print "Aborted" and return
-    # TODO: second confirmation: input("Type collection name to confirm: ")
-    # TODO: if not QDRANT_COLLECTION_NAME → print "Aborted" and return
-    # TODO: client.delete_collection(QDRANT_COLLECTION_NAME)
-    # TODO: print confirmation
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    print(f"{Colors.RED} Deleting the collection is a destructive operation and cannot be recovered. {Colors.END}")
+    response = input(f"{Colors.YELLOW}Are you sure you want to proceed? (y/N): {Colors.END}")
+    if response.strip().lower() != 'y':
+        print(f"{Colors.GREEN} Aborted! {Colors.END}")
+        return
+    
+    name = input(f"Type collection name to confirm: ").strip()
+    if QDRANT_COLLECTION_NAME != name:
+        print(f"{Colors.RED} Incorrect Collection Name. Aborted! {Colors.END}")
+        return
+    
+    try:
+        if not client.collection_exists(QDRANT_COLLECTION_NAME):
+            print(f"{Colors.YELLOW}Collection '{QDRANT_COLLECTION_NAME}' does not exist.{Colors.END}")
+            return
+        
+        client.delete_collection(QDRANT_COLLECTION_NAME)
 
+        if DEBUG:
+            print(f"{Colors.GREEN} Successfully Deleted Collection: {QDRANT_COLLECTION_NAME} {Colors.END}")
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Failed to Delete Collection: {QDRANT_COLLECTION_NAME} {Colors.END}")
+        raise RuntimeError(f"Failed to Delete Collection '{QDRANT_COLLECTION_NAME}': {e} ") from e
 
 def add_points(
     client: QdrantClient,
@@ -141,26 +176,35 @@ def add_points(
         >>> print(count)
         42
     """
-    # TODO: raise ValueError if chunks is empty
-    # TODO: call embed_batch(chunks) to get vectors
-    # TODO: build list of PointStruct objects:
-    #       for each chunk, vector pair:
-    #           PointStruct(
-    #               id=str(uuid.uuid4()),
-    #               vector=vector,
-    #               payload={
-    #                   "chunk_text": chunk,
-    #                   "doc_id": doc_id,
-    #                   "client_id": client_id,
-    #                   "chunk_index": i,
-    #                   "page": _get_page_for_chunk(i, chunks[i], page_metadata)
-    #               }
-    #           )
-    # TODO: client.upsert(collection_name=QDRANT_COLLECTION_NAME, points=points)
-    # TODO: return len(chunks)
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    if not chunks:
+        raise ValueError("Given chunks are empty - Cannot be empty")
+    try:
+        embed = embed_batch(chunks)
+        points = []
+        for i, (chunk, vector) in enumerate(zip(chunks, embed)):
+            points.append(PointStruct(
+                    id=str(uuid.uuid4()),
+                    vector={"dense": vector},
+                    payload={
+                        "chunk_text": chunk,
+                        "doc_id": doc_id,
+                        "client_id": client_id,
+                        "chunk_index": i,
+                        "page": _get_page_for_chunk(i, chunks[i], page_metadata)
+                    }
+                )
+            )
+        
+        client.upsert(
+            collection_name=QDRANT_COLLECTION_NAME,
+            points=points
+        )
 
+        return len(chunks)
+    except Exception as e:
+        if DEBUG:
+            print(f'{Colors.RED}Failed to insert points. {Colors.END}')
+        raise RuntimeError(f"Could not insert points: {e}") from e
 
 def remove_point(client: QdrantClient, point_id: str) -> None:
     """
@@ -179,13 +223,19 @@ def remove_point(client: QdrantClient, point_id: str) -> None:
     Raises:
         RuntimeError: If deletion fails.
     """
-    # TODO: client.delete(
-    #           collection_name=QDRANT_COLLECTION_NAME,
-    #           points_selector=[point_id]
-    #       )
-    # TODO: print confirmation
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    try:
+        client.delete(
+            collection_name=QDRANT_COLLECTION_NAME,
+            points_selector=[point_id]
+        )
+        if DEBUG:
+            print(f"{Colors.BLUE} Successfully deleted the point: {point_id} {Colors.END}")
+    
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Failed to delete the point: {point_id} {Colors.END}")
+        
+        raise RuntimeError(f"Failed to delete: {point_id}") from e
 
 
 def remove_points(client: QdrantClient, doc_id: str) -> None:
@@ -205,14 +255,29 @@ def remove_points(client: QdrantClient, doc_id: str) -> None:
     Raises:
         RuntimeError: If deletion fails.
     """
-    # TODO: build Filter with FieldCondition matching doc_id
-    # TODO: client.delete(
-    #           collection_name=QDRANT_COLLECTION_NAME,
-    #           points_selector=FilterSelector(filter=doc_filter)
-    #       )
-    # TODO: print confirmation with doc_id
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    try:
+        client.delete(
+            collection_name=QDRANT_COLLECTION_NAME,
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="doc_id",
+                            match=MatchValue(value=doc_id)
+                        ),
+                    ],
+                )
+            ),
+        )
+
+        if DEBUG:
+            print(f"{Colors.BLUE} Successfully deleted all points for document: {doc_id} {Colors.END}")
+    
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Failed to delete the point. {Colors.END}")
+        
+        raise RuntimeError(f"Failed to delete points for doc_id '{doc_id}': {e}") from e
 
 
 def query_collection(
@@ -256,14 +321,26 @@ def query_collection(
         >>> print(results[0]["chunk_text"])
         "We are open Monday to Friday, 9am to 6pm..."
     """
-    # TODO: embed query using embed_text(query)
-    # TODO: build Filter with FieldCondition matching client_id
-    # TODO: client.search(
-    #           collection_name=QDRANT_COLLECTION_NAME,
-    #           query_vector=query_vector,
-    #           query_filter=client_filter,
-    #           limit=top_k
-    #       )
+    query_vector = embed_text(query)
+    client_filter = FilterSelector(
+        filter=Filter(
+            must=[
+                FieldCondition(
+                    key="client_id",
+                    match=MatchValue(value=client_id)
+                )
+            ]
+        )
+    )
+
+    client.query_points(
+        collection_name=QDRANT_COLLECTION_NAME,
+        prefetch=[
+            models.Prefetch(
+                query=models.SparseVector
+            )
+        ]
+    )
     # TODO: build and return list of result dicts from search results
     #       result.payload["chunk_text"], result.score, etc.
     # TODO: wrap in try/except, raise RuntimeError on failure

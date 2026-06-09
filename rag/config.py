@@ -4,6 +4,7 @@ load_dotenv()
 
 # utils/embedder.py
 EMBEDDING_MODEL="jinaai/jina-embeddings-v5-text-nano"
+VECTOR_SIZE = 768       # must match embedding model output
 
 # utils/qdrant.py
 QDRANT_COLLECTION_NAME="rag-docs"
