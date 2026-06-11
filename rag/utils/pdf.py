@@ -186,6 +186,8 @@ def cleanup_on_failure(file_path: Optional[str], metadata_path: Optional[str]) -
         Path(metadata_path).unlink(missing_ok=True)
         print(f"Removed metadata: {metadata_path}")
 
+def generate_doc_id(client_id: str, original_filename: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_id}:{original_filename}"))
 
 def _extract_pdf(file_path: str) -> Tuple[str, list]:
     try:

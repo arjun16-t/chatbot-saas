@@ -16,6 +16,7 @@ QDRANT_URL=os.getenv("QDRANT_URL")
 # utils/chunker.py
 CHUNK_SIZE=1024     # 4 characters = 1 token -> 2048 = 256 tokens
 OVERLAP=100         # 100 = 20 tokens
+PREFETCH_LIMIT=20
 
 GROQ_API_KEY=os.getenv("GROQ_API_KEY")
 

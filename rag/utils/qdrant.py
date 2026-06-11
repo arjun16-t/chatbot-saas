@@ -21,12 +21,12 @@ from qdrant_client.models import (
     VectorParams, Distance, PointStruct,
     Filter, FilterSelector, FieldCondition, MatchValue,
     PayloadSchemaType,
-    SparseVectorParams,
+    SparseVectorParams, SparseVector,
     HnswConfigDiff,
     Prefetch, FusionQuery, Fusion
 )
 from utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
-from config import QDRANT_COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE, DEBUG, Colors
+from config import QDRANT_COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE, DEBUG, PREFETCH_LIMIT, Colors
 from typing import Optional
 import uuid
 
@@ -235,7 +235,11 @@ def remove_point(client: QdrantClient, point_id: str) -> None:
         raise RuntimeError(f"Failed to delete: {point_id}") from e
 
 
-def remove_points(client: QdrantClient, doc_id: str) -> None:
+def remove_points(
+    client: QdrantClient,
+    doc_id: str,
+    client_id: str
+) -> None:
     """
     Removes all points belonging to a specific document.
 
@@ -262,6 +266,10 @@ def remove_points(client: QdrantClient, doc_id: str) -> None:
                             key="doc_id",
                             match=MatchValue(value=doc_id)
                         ),
+                        FieldCondition(
+                            key="client_id",
+                            match=MatchValue(value=client_id)
+                        ),
                     ],
                 )
             ),
@@ -281,7 +289,7 @@ def query_collection(
     client: QdrantClient,
     query: str,
     client_id: str,
-    top_k: int = 5
+    top_k: int = 10
 ) -> list[dict]:
     """
     Searches the collection for chunks semantically similar to the query,
@@ -290,20 +298,21 @@ def query_collection(
     Pipeline:
         1. Embed the query string using embed_text()
         2. Apply client_id payload filter for multi-tenancy
-        3. Run cosine similarity search
-        4. Return top_k results with text and relevance score
+        3. Run hybrid search (dense + sparse)
+        4. Fuse results using Reciprocal Rank Fusion (RRF)
+        5. Return top_k results with text and relevance score
 
     Args:
         client (QdrantClient): Active Qdrant client instance.
         query (str): User's natural language question.
         client_id (str): Client identifier to scope the search.
-        top_k (int): Number of top results to return. Default 5.
+        top_k (int): Number of top results to return. Default 10.
 
     Returns:
         list[dict]: List of result dicts, each containing:
             {
                 "chunk_text": str,
-                "score": float,      # cosine similarity 0-1
+                "score": float,
                 "doc_id": str,
                 "page": int,
                 "chunk_index": int
@@ -318,9 +327,17 @@ def query_collection(
         >>> print(results[0]["chunk_text"])
         "We are open Monday to Friday, 9am to 6pm..."
     """
-    query_vector = embed_text(query)
-    client_filter = FilterSelector(
-        filter=Filter(
+    try:
+        dense_query = embed_text(query)
+        sparse_query = embed_sparse(query)
+
+        if dense_query is None:
+            raise ValueError("Dense embedding generation failed")
+
+        if sparse_query is None:
+            raise ValueError("Sparse embedding generation failed")
+
+        client_filter = Filter(
             must=[
                 FieldCondition(
                     key="client_id",
@@ -328,21 +345,42 @@ def query_collection(
                 )
             ]
         )
-    )
 
-    client.query_points(
-        collection_name=QDRANT_COLLECTION_NAME,
-        prefetch=[
-            models.Prefetch(
-                query=models.SparseVector
-            )
+        results = client.query_points(
+                    collection_name=QDRANT_COLLECTION_NAME,
+                    prefetch=[
+                        Prefetch(
+                            query=sparse_query,
+                            using="sparse",
+                            limit=PREFETCH_LIMIT,
+                        ),
+                        Prefetch(
+                            query=dense_query,
+                            using="dense",
+                            limit=PREFETCH_LIMIT,
+                        ),
+                    ],
+                    query=FusionQuery(fusion=Fusion.RRF),
+                    query_filter=client_filter,
+                    limit=top_k,
+                    with_payload=True
+                )
+        
+        result = [
+            {
+                "id": point.id,
+                "score": point.score,
+                "chunk_text": point.payload.get("chunk_text"),
+                "doc_id": point.payload.get("doc_id"),
+                "page": point.payload.get("page"),
+                "chunk_index": point.payload.get("chunk_index")
+            }
+            for point in results.points
         ]
-    )
-    # TODO: build and return list of result dicts from search results
-    #       result.payload["chunk_text"], result.score, etc.
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
 
+        return result
+    except Exception as e:
+        raise RuntimeError(f"Failed to query collection for client '{client_id}': {e}") from e
 
 def update_metadata(
     client: QdrantClient,
