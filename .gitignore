@@ -14,8 +14,10 @@ media/
 # Personal Files
 docs/
 *.odt*
+*.ipynb
 
 # Migrations
 migrations/
 
 node_modules/
+rag/models

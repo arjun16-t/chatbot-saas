@@ -5,7 +5,10 @@ load_dotenv()
 # utils/embedder.py
 EMBEDDING_MODEL="jinaai/jina-embeddings-v5-text-nano"
 VECTOR_SIZE = 768       # must match embedding model output
+MODELS_CACHE_DIR = os.path.join(os.path.dirname(__file__), "models")
 
+# Sparse Embedding Model
+SPARSE_MODEL="Qdrant/bm42-all-minilm-l6-v2-attentions"
 # utils/qdrant.py
 QDRANT_COLLECTION_NAME="rag-docs"
 QDRANT_URL=os.getenv("QDRANT_URL")

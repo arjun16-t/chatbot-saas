@@ -18,18 +18,14 @@ Each client's chunks are isolated via client_id field in point payloads.
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import (
-    VectorParams,
-    Distance,
-    PointStruct,
-    Filter,
-    FilterSelector,
-    FieldCondition,
-    MatchValue,
+    VectorParams, Distance, PointStruct,
+    Filter, FilterSelector, FieldCondition, MatchValue,
     PayloadSchemaType,
     SparseVectorParams,
-    HnswConfigDiff
+    HnswConfigDiff,
+    Prefetch, FusionQuery, Fusion
 )
-from utils.embedder import embed_batch, embed_text
+from utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
 from config import QDRANT_COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE, DEBUG, Colors
 from typing import Optional
 import uuid
@@ -179,12 +175,13 @@ def add_points(
     if not chunks:
         raise ValueError("Given chunks are empty - Cannot be empty")
     try:
-        embed = embed_batch(chunks)
+        dense_embeddings = embed_batch(chunks)
+        sparse_embeddings = embed_sparse_batch(chunks)
         points = []
-        for i, (chunk, vector) in enumerate(zip(chunks, embed)):
+        for i, (chunk, dense_vec, sparse_vec) in enumerate(zip(chunks, dense_embeddings, sparse_embeddings)):
             points.append(PointStruct(
                     id=str(uuid.uuid4()),
-                    vector={"dense": vector},
+                    vector={"dense": dense_vec, "sparse": sparse_vec},
                     payload={
                         "chunk_text": chunk,
                         "doc_id": doc_id,

@@ -5,3 +5,5 @@ qdrant-client
 groq
 python-dotenv
 python-docx
+fastembed
+peft

@@ -10,14 +10,15 @@ Model: configured via EMBEDDING_MODEL in config.py
 """
 
 from sentence_transformers import SentenceTransformer
-from config import EMBEDDING_MODEL, DEBUG, Colors
+from config import EMBEDDING_MODEL, SPARSE_MODEL, DEBUG, MODELS_CACHE_DIR, Colors
 from typing import Optional
-
+from fastembed import SparseTextEmbedding
+from qdrant_client.models import SparseVector
 
 # Module-level model instance — loaded once, reused across calls
 # Avoids reloading the model on every function call (expensive)
 _model: Optional[SentenceTransformer] = None
-
+_sparse_model: Optional[SparseTextEmbedding] = None
 
 def _get_model() -> SentenceTransformer:
     """
@@ -34,17 +35,51 @@ def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
         try:
-            _model = SentenceTransformer(EMBEDDING_MODEL, trust_remote_code=True)
+            _model = SentenceTransformer(
+                EMBEDDING_MODEL,
+                cache_folder=MODELS_CACHE_DIR,
+                trust_remote_code=True,
+            )
 
             if DEBUG:
-                print(f"{Colors.BLUE} Successfully Loaded: {_model} {Colors.END}")
+                print(f"{Colors.BLUE} Successfully Loaded: {EMBEDDING_MODEL} {Colors.END}")
             
         except Exception as e:
             if DEBUG:
-                print(f"{Colors.RED} Failed to Load: {_model} {Colors.END}")
+                print(f"{Colors.RED} Failed to Load: {EMBEDDING_MODEL} {Colors.END}")
             raise RuntimeError(f"Failed to load model '{EMBEDDING_MODEL}': {e}") from e
     
     return _model
+
+def _get_sparse_model() -> SparseTextEmbedding:
+    """
+    Returns the singleton SparseTextEmbedding model instance.
+
+    Loads the model from HuggingFace on first call and caches it
+    at module level and directory. Subsequent calls return the cached instance
+    without reloading — critical for performance since model loading
+    takes 2-5 seconds.
+
+    Returns:
+        SparseTextEmbedding: Loaded sparse embedding model instance.
+    """
+    global _sparse_model
+    if _sparse_model is None:
+        try:
+            _sparse_model = SparseTextEmbedding(
+                model_name=SPARSE_MODEL,
+                cache_dir=MODELS_CACHE_DIR,
+            )
+
+            if DEBUG:
+                print(f"{Colors.BLUE} Successfully Loaded: {SPARSE_MODEL} {Colors.END}")
+            
+        except Exception as e:
+            if DEBUG:
+                print(f"{Colors.RED} Failed to Load: {SPARSE_MODEL} {Colors.END}")
+            raise RuntimeError(f"Failed to load model '{SPARSE_MODEL}': {e}") from e
+    
+    return _sparse_model
 
 
 def embed_text(text: str) -> list[float]:
@@ -67,7 +102,7 @@ def embed_text(text: str) -> list[float]:
     Raises:
         RuntimeError: If embedding fails, wrapping original exception.
     """
-    model: SentenceTransformer = _get_model()
+    model = _get_model()
     try:
         embed = model.encode(text, task="retrieval", prompt_name="query", convert_to_list=True)
 
@@ -79,7 +114,7 @@ def embed_text(text: str) -> list[float]:
     except Exception as e:
         if DEBUG:
             print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
-        raise RuntimeError(f"Failed to embed: {e}")
+        raise RuntimeError(f"Failed to embed") from e
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
@@ -114,13 +149,13 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
     """
     if not texts:
         raise ValueError("Requires list of str texts")
-    model: SentenceTransformer = _get_model()
+    model = _get_model()
 
     try:
         embeds = model.encode(
             texts, task="retrieval",
-            prompt_name="query", 
-            show_progress_bar=True, 
+            prompt_name="document", 
+            show_progress_bar=DEBUG, 
             convert_to_list=True
         )
 
@@ -132,4 +167,64 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
     except Exception as e:
         if DEBUG:
             print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
-        raise RuntimeError(f"Failed to embed: {e}")
+        raise RuntimeError(f"Failed to embed") from e
+
+def embed_sparse_batch(texts: list[str]) -> list[SparseVector]:
+    """
+    Generates sparse vector embeddings for a list of text strings
+    in a single model call. Usually used for ingestion.
+
+    Args:
+        texts (list[str]): List of text strings to embed.
+                           Typically the output of chunk_text()
+                           from utils/chunker.py.
+
+    Returns:
+        list[SparseVector]: List of sparse vectors, one per input text.
+                           Order is preserved — texts[i] → vectors[i].
+
+    Raises:
+        ValueError: If texts list is empty.
+        RuntimeError: If embedding fails, wrapping original exception.
+    """
+    
+    if not texts:
+        raise ValueError("Requires a list of str texts")
+    model = _get_sparse_model()
+
+    try:
+        embeddings = list(model.embed(texts))
+
+        if DEBUG:
+            print(f"{Colors.BLUE} Successfully Embedded the texts. {Colors.END}")
+        
+        result = []
+        for embedding in embeddings:
+            result.append(SparseVector(
+                indices=embedding.indices.tolist(),
+                values=embedding.values.tolist()
+            ))
+        
+        return result
+    except Exception as e:
+        if DEBUG:
+            print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
+        raise RuntimeError(f"Failed to embed text") from e
+
+def embed_sparse(text: str) -> SparseVector:
+    """
+    Generates sparse vector embeddings for a single text string
+    in a single model call. Usually used for retrieval.
+    Internally calls embed_sparse_batch
+
+    Args:
+        text (str): Text strings to embed.
+
+    Returns:
+        SparseVector: Sparse vector
+
+    Raises:
+        ValueError: If text list is empty.
+        RuntimeError: If embedding fails, wrapping original exception.
+    """
+    return embed_sparse_batch([text])[0]
