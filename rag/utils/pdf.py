@@ -19,7 +19,7 @@ from docx import Document
 from config import SUPPORTED_FORMATS, MAX_FILE_SIZE_BYTES
 
 
-def validate_file(file_path: str) -> Tuple[bool, Optional[str]]:
+def validate_file(file_path: str | Path) -> Tuple[bool, Optional[str]]:
     """
     Validates a file before processing it in the ingestion pipeline.
 
@@ -144,6 +144,8 @@ def save_metadata(metadata: dict, storage_path: str) -> None:
         - client_id (str): Client identifier
         - upload_date (str): ISO format timestamp
         - file_hash (str): SHA256 hash of file contents
+        - doc_id (str): Generated doc id
+        - status (str): status of the document to upload
 
     Will be extended in utils/qdrant.py with:
         - chunk_count, embedding_model, embedding_version
