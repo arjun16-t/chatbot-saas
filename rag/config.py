@@ -52,3 +52,8 @@ class Colors:
     NEGATIVE = "\033[7m"
     CROSSED = "\033[9m"
     END = "\033[0m"
+
+# TODO: implement client doc_id cache (dict[str, set[str]])
+# populated from Postgres on client login in Sprint 5
+# eliminates redundant Qdrant existence checks
+# invalidate on document delete/update

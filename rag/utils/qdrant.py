@@ -22,16 +22,20 @@ from qdrant_client.models import (
     Filter, FilterSelector, FieldCondition, MatchValue,
     PayloadSchemaType,
     SparseVectorParams, SparseVector,
-    HnswConfigDiff,
+    HnswConfigDiff, CollectionInfo,
     Prefetch, FusionQuery, Fusion
 )
 from utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
-from config import QDRANT_COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE, DEBUG, PREFETCH_LIMIT, Colors
+from config import (
+    QDRANT_COLLECTION_NAME, EMBEDDING_MODEL,
+    VECTOR_SIZE, DEBUG, PREFETCH_LIMIT,
+    CHUNK_SIZE, OVERLAP, Colors
+)
 from typing import Optional
 import uuid
 
 
-def get_or_create_collection(client: QdrantClient) -> None:
+def get_or_create_collection(client: QdrantClient) -> CollectionInfo:
     """
     Ensures the Qdrant collection exists, creating it if necessary.
 
@@ -83,6 +87,13 @@ def get_or_create_collection(client: QdrantClient) -> None:
 
             if DEBUG:
                 print(f"{Colors.BLUE} Successfully Created the Collection: {QDRANT_COLLECTION_NAME} {Colors.END}")
+        
+        else:
+            if DEBUG:
+                print(f"{Colors.GREEN} Collection already exists: {QDRANT_COLLECTION_NAME} {Colors.END}")
+        
+        return client.get_collection(QDRANT_COLLECTION_NAME)
+        
     except Exception as e:
         if DEBUG:
             print(f"{Colors.RED} Failed to create collection {Colors.END}")
@@ -187,7 +198,7 @@ def add_points(
                         "doc_id": doc_id,
                         "client_id": client_id,
                         "chunk_index": i,
-                        "page": _get_page_for_chunk(i, chunks[i], page_metadata)
+                        "page": _get_page_for_chunk(i, page_metadata)
                     }
                 )
             )
@@ -407,17 +418,31 @@ def update_metadata(
     Raises:
         RuntimeError: If payload update fails.
     """
-    # TODO: build Filter matching doc_id
-    # TODO: client.set_payload(
-    #           collection_name=QDRANT_COLLECTION_NAME,
-    #           payload=metadata,
-    #           points=Filter(...)
-    #       )
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    try:
+        doc_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="doc_id",
+                    match=MatchValue(value=doc_id)
+                )
+            ]
+        )
+        
+        client.set_payload(
+            collection_name=QDRANT_COLLECTION_NAME,
+            payload=metadata,
+            points=doc_filter
+        )
+
+        if DEBUG:
+            print(f'{Colors.BLUE} Updated metadata for {doc_id} successfully {Colors.END}')
+    
+    except Exception as e:
+        raise RuntimeError(f"Failed to update metadata for: {doc_id}") from e
 
 
-def get_indexes(client: QdrantClient) -> list:
+
+def get_collection_info(client: QdrantClient) -> list:
     """
     Returns all payload indexes defined on the collection.
 
@@ -433,16 +458,26 @@ def get_indexes(client: QdrantClient) -> list:
     Raises:
         RuntimeError: If fetching collection info fails.
     """
-    # TODO: info = client.get_collection(QDRANT_COLLECTION_NAME)
-    # TODO: return info.payload_schema (contains index definitions)
-    # TODO: print each index name and type for readability
-    # TODO: wrap in try/except, raise RuntimeError on failure
-    pass
+    try:
+        info = client.get_collection(QDRANT_COLLECTION_NAME)
+        payload = info.payload_schema
+
+        if DEBUG:
+            print(
+                f'Status: {info.status}\n'
+                f'Vectors: {info.points_count}\t| Indexed Vector Count: {info.indexed_vectors_count}\n'
+                f'===== PAYLOAD INFORMATION =====\n'
+            )
+            for key, value in payload.items():
+                print(f'{key}: {value.data_type} | {value.points}')
+        return payload
+    
+    except Exception as e:
+        raise RuntimeError("Failed to get payload indexes") from e
 
 
 def _get_page_for_chunk(
     chunk_index: int,
-    chunk_text: str,
     page_metadata: Optional[list[dict]]
 ) -> int:
     """
@@ -452,19 +487,36 @@ def _get_page_for_chunk(
     Private helper for add_points(). Falls back to page 1 if
     page_metadata is unavailable (non-PDF files).
 
+    Strategy:
+        - Tracks cumulative character count across chunks
+        - Finds which page boundary the chunk falls within
+        - Uses char_start/char_end from page_metadata to match
+
     Args:
         chunk_index (int): Index of the chunk in the chunks list.
         chunk_text (str): Text content of the chunk.
         page_metadata (Optional[list[dict]]): Page boundary info
-            from extract_text(). Each dict has "page", "char_start",
-            "char_end" keys.
+            from extract_text(). Each dict has:
+            {"page": int, "char_start": int, "char_end": int}
 
     Returns:
-        int: Best-guess page number (1-indexed). Returns 1 if
-             page_metadata is None or empty.
+        int: Best-guess page number (1-indexed).
+             Returns 1 if page_metadata is None or empty.
     """
-    # TODO: if page_metadata is None or empty → return 1
-    # TODO: use chunk_index or char position to find matching page
-    #       hint: find the page where char_start <= chunk position <= char_end
-    # TODO: return page number
-    pass
+    # No page metadata available (non-PDF files like DOCX, TXT, MD)
+    if not page_metadata:
+        return 1
+
+    # Approximate character position of this chunk
+    # Each chunk is CHUNK_SIZE chars, with OVERLAP repeated
+    # So chunk i starts at roughly: i * (CHUNK_SIZE - OVERLAP)
+    approx_char_pos = chunk_index * (CHUNK_SIZE - OVERLAP)
+
+    # Find which page this character position falls within
+    for page in page_metadata:
+        if page["char_start"] <= approx_char_pos <= page["char_end"]:
+            return page["page"]
+
+    # If position exceeds all pages (can happen with overlap),
+    # return the last page
+    return page_metadata[-1]["page"]
