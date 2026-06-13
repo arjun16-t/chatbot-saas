@@ -20,7 +20,7 @@ OVERLAP=100         # 100 = 20 tokens
 PREFETCH_LIMIT=20
 
 GROQ_API_KEY=os.getenv("GROQ_API_KEY")
-QUERYING_MODEL="qwen/qwen3-32b"
+QUERYING_MODEL='llama-3.3-70b-versatile'
 
 # utils/pdf.py
 SUPPORTED_FORMATS = [".pdf", ".docx", ".txt", ".md"]
