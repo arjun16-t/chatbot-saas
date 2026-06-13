@@ -104,7 +104,7 @@ def embed_text(text: str) -> list[float]:
     """
     model = _get_model()
     try:
-        embed = model.encode(text, task="retrieval", prompt_name="query", convert_to_list=True)
+        embed = model.encode(text, task="retrieval", prompt_name="query").tolist()
 
         if DEBUG:
             print(f"{Colors.BLUE} Successfully Embedded: {embed[:100]} {Colors.END}")
@@ -156,8 +156,7 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
             texts, task="retrieval",
             prompt_name="document", 
             show_progress_bar=DEBUG, 
-            convert_to_list=True
-        )
+        ).tolist()
 
         if DEBUG:
             print(f"{Colors.BLUE} Successfully Embedded the texts. {Colors.END}")

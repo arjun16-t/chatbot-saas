@@ -40,7 +40,7 @@ from utils.qdrant import (
 client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
 
-def ingest(file_path: str, client_id: str) -> dict:
+def ingest(file_path: str | Path, client_id: str) -> dict:
     """
     Runs the full ingestion pipeline for a single document.
 
@@ -161,7 +161,7 @@ def ingest(file_path: str, client_id: str) -> dict:
         }
         update_qdrant_metadata(client, doc_id, qdrant_meta)
 
-        meta.update(qdrant_meta)
+        metadata.update(qdrant_meta)
         save_metadata(metadata, metadata_path)
 
         # --- RETURN RESULT ---
@@ -172,7 +172,7 @@ def ingest(file_path: str, client_id: str) -> dict:
         # --- CLEANUP ON FAILURE ---
         # TODO: Sprint 4 — cleanup_on_failure should only delete
         # the processed copy, not the original Django upload
-        cleanup_on_failure(file_path_obj, metadata_path)
+        # cleanup_on_failure(file_path_obj, metadata_path)
         if doc_id is not None:
             remove_points(client, doc_id, client_id)
         

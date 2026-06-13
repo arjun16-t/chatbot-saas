@@ -71,7 +71,7 @@ def generate_filename(client_id: str, original_filename: str) -> str:
     return f"{client_id}_{uid}_{sanitized}"
 
 
-def compute_file_hash(file_path: str) -> str:
+def compute_file_hash(file_path: str | Path) -> str:
     """
     Computes the SHA256 hash of a file's contents.
 
@@ -93,7 +93,7 @@ def compute_file_hash(file_path: str) -> str:
     return file_hash.hexdigest()
 
 
-def extract_text(file_path: str) -> Tuple[str, list]:
+def extract_text(file_path: str | Path) -> Tuple[str, list]:
     """
     Extracts text content from a file and returns it as a single string.
 
@@ -166,7 +166,7 @@ def save_metadata(metadata: dict, storage_path: str) -> None:
         json.dump(metadata, f, indent=2)
 
 
-def cleanup_on_failure(file_path: Optional[str], metadata_path: Optional[str]) -> None:
+def cleanup_on_failure(file_path: Optional[str] | Optional[Path], metadata_path: Optional[str]) -> None:
     """
     Cleans up partially processed files in case of ingestion failure.
 

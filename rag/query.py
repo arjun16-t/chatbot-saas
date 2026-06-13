@@ -36,7 +36,7 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 def query(
     question: str,
     client_id: str
-) -> str:
+) -> dict:
     """
     Runs the full query pipeline for a single query.
 

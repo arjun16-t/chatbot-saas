@@ -12,6 +12,7 @@ SPARSE_MODEL="Qdrant/bm42-all-minilm-l6-v2-attentions"
 # utils/qdrant.py
 QDRANT_COLLECTION_NAME="rag-docs"
 QDRANT_URL=os.getenv("QDRANT_URL")
+QDRANT_API_KEY=os.getenv("QDRANT_API_KEY") or None
 
 # utils/chunker.py
 CHUNK_SIZE=1024     # 4 characters = 1 token -> 2048 = 256 tokens
