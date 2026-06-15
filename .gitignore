@@ -21,5 +21,7 @@ migrations/
 
 node_modules/
 rag/models
-rag/logs
 rag/metadata
+
+# Log folders
+*/logs

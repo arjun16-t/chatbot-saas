@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import Client
 
 
-class RegisterSerializer(serializers.ModelSerializer):
+class ClientSerializer(serializers.ModelSerializer):
     """
     Serializer for client registration.
     Validates email, password and creates a new Client instance.
@@ -13,7 +13,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ['email', 'password', 'subscription_plan']
+        fields = ['email', 'password']
 
     def validate_password(self, value: str) -> str:
         """
@@ -39,8 +39,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             validated_data: Cleaned data from the serializer.
         
         Returns:
-            Tuple of (client instance, raw_api_key).
+            client instance
         """
         password = validated_data.pop('password')
-        client = Client.objects.create_user(password=password, **validated_data)
-        return client
+        email = validated_data.pop('email')
+        client, api_key = Client.objects.create_user_with_api_key(email=email, password=password, **validated_data)
+        return client, api_key

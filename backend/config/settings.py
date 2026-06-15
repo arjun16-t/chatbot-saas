@@ -190,3 +190,48 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ==============================================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==============================================================================
+# LOGGING
+# ==============================================================================
+# Create logs directory before logging is configured
+Path(BASE_DIR / 'logs').mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': 'utils.logger.JSONFormatter',
+        },
+        'rich': {
+            'datefmt': '[%X]',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'rich.logging.RichHandler',
+            'formatter': 'rich',
+            'rich_tracebacks': True,
+            'show_path': True,
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'app.jsonl',
+            'maxBytes': 5_000_000,
+            'backupCount': 5,
+            'formatter': 'json',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'DEBUG' if DEBUG else 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',  # Django internals at INFO, not DEBUG
+            'propagate': False,
+        },
+    },
+}
