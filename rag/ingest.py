@@ -17,8 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from qdrant_client import QdrantClient
 
-from config import QDRANT_URL, QDRANT_API_KEY, EMBEDDING_MODEL, DEBUG, Colors
-from utils.pdf import (
+from rag.config import QDRANT_URL, QDRANT_API_KEY, EMBEDDING_MODEL, DEBUG, Colors
+from rag.utils.pdf import (
     validate_file,
     generate_filename,
     generate_doc_id,
@@ -27,8 +27,8 @@ from utils.pdf import (
     save_metadata,
     cleanup_on_failure
 )
-from utils.chunker import chunk_text
-from utils.qdrant import (
+from rag.utils.chunker import chunk_text
+from rag.utils.qdrant import (
     get_or_create_collection,
     add_points,
     remove_points,

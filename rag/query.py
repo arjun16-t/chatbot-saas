@@ -14,7 +14,7 @@ Usage:
     answer = query("user_question", "client_123")
 """
 
-from utils.logger import setup_logging, get_logger
+from rag.utils.logger import get_logger
 logger = get_logger(__name__)
 
 from qdrant_client import QdrantClient
@@ -25,13 +25,28 @@ import json
 import re
 import time
 
-from config import QDRANT_URL, QDRANT_API_KEY, QUERYING_MODEL, GROQ_API_KEY
-from utils.qdrant import query_collection
+from rag.config import QDRANT_URL, QDRANT_API_KEY, QUERYING_MODEL, GROQ_API_KEY
+from rag.utils.qdrant import query_collection
 
 # Module-level Qdrant client — created once, reused across all query calls
-client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+_qdrant_client = None
+_groq_client = None
+
+def _get_qdrant_client():
+    global _qdrant_client
+    if _qdrant_client is None:
+        _qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    
+    return _qdrant_client
+
+def _get_groq_client():
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = Groq(api_key=GROQ_API_KEY)
+    
+    return _groq_client
+
 # TODO: Sprint 2 — switch to AsyncGroq for non-blocking LLM calls in Django
-groq_client = Groq(api_key=GROQ_API_KEY)
 
 def query(
     question: str,
@@ -56,17 +71,18 @@ def query(
     Returns:
         dict: Query result containing:
             {
-                "answer": str,
-                "sources": [
-                    {
-                        "chunk_text": str,
-                        "doc_id": str,
-                        "page": int,
-                        "score": float
-                    }
-                ],
-                "query": str,
                 "client_id": str,
+                "query": str,
+                "answer": str,
+                "used_sources": list
+                "metadata": {
+                    "retrieval_count": int,
+                    "max_score": int,
+                    "min_score": int,
+                    "avg_score": float,
+                    "model": QUERYING_MODEL,
+                    "latency_ms": int
+                }
                 "status": "answered" | "unanswered"
             }
 
@@ -90,7 +106,7 @@ def query(
             "status": "unanswered"
         }
 
-        results = query_collection(client=client, query=question, client_id=client_id)
+        results = query_collection(client=_get_qdrant_client(), query=question, client_id=client_id)
 
         if len(results) == 0:
             answer = f"""
@@ -150,7 +166,7 @@ Question:
             }
         ]
 
-        chat_completion = groq_client.chat.completions.create(
+        chat_completion = _get_groq_client().chat.completions.create(
             messages=messages,
             model=QUERYING_MODEL,
             temperature=0.3

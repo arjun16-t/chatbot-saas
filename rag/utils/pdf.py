@@ -16,7 +16,7 @@ from typing import Tuple, Optional
 import pymupdf4llm
 from docx import Document
 
-from config import SUPPORTED_FORMATS, MAX_FILE_SIZE_BYTES
+from rag.config import SUPPORTED_FORMATS, MAX_FILE_SIZE_BYTES
 
 
 def validate_file(file_path: str | Path) -> Tuple[bool, Optional[str]]:

@@ -25,8 +25,8 @@ from qdrant_client.models import (
     HnswConfigDiff, CollectionInfo,
     Prefetch, FusionQuery, Fusion
 )
-from utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
-from config import (
+from rag.utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
+from rag.config import (
     QDRANT_COLLECTION_NAME, EMBEDDING_MODEL,
     VECTOR_SIZE, DEBUG, PREFETCH_LIMIT,
     CHUNK_SIZE, OVERLAP, Colors

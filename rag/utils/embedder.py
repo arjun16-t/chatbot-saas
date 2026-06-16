@@ -10,7 +10,7 @@ Model: configured via EMBEDDING_MODEL in config.py
 """
 
 from sentence_transformers import SentenceTransformer
-from config import EMBEDDING_MODEL, SPARSE_MODEL, DEBUG, MODELS_CACHE_DIR, Colors
+from rag.config import EMBEDDING_MODEL, SPARSE_MODEL, DEBUG, MODELS_CACHE_DIR, Colors
 from typing import Optional
 from fastembed import SparseTextEmbedding
 from qdrant_client.models import SparseVector

@@ -2,7 +2,7 @@ import logging
 import json
 from rich.logging import RichHandler
 from logging.handlers import RotatingFileHandler
-from config import DEBUG
+from rag.config import DEBUG
 from pathlib import Path
 from datetime import datetime, timezone
 

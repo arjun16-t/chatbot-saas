@@ -1,6 +1,7 @@
-from dotenv import load_dotenv
+from decouple import AutoConfig
 import os
-load_dotenv()
+from pathlib import Path
+config=AutoConfig(search_path=Path(__file__).parent.parent)
 
 # utils/embedder.py
 EMBEDDING_MODEL="jinaai/jina-embeddings-v5-text-nano"
@@ -11,22 +12,22 @@ MODELS_CACHE_DIR = os.path.join(os.path.dirname(__file__), "models")
 SPARSE_MODEL="Qdrant/bm42-all-minilm-l6-v2-attentions"
 # utils/qdrant.py
 QDRANT_COLLECTION_NAME="rag-docs"
-QDRANT_URL=os.getenv("QDRANT_URL")
-QDRANT_API_KEY=os.getenv("QDRANT_API_KEY") or None
+QDRANT_URL=config("QDRANT_URL")
+QDRANT_API_KEY=config("QDRANT_API_KEY") or None
 
 # utils/chunker.py
 CHUNK_SIZE=1024     # 4 characters = 1 token -> 2048 = 256 tokens
 OVERLAP=100         # 100 = 20 tokens
 PREFETCH_LIMIT=20
 
-GROQ_API_KEY=os.getenv("GROQ_API_KEY")
+GROQ_API_KEY=config("GROQ_API_KEY")
 QUERYING_MODEL='llama-3.3-70b-versatile'
 
 # utils/pdf.py
 SUPPORTED_FORMATS = [".pdf", ".docx", ".txt", ".md"]
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 
-DEBUG = True
+DEBUG = config('DEBUG', cast=bool)
 
 class Colors:
     """ ANSI color codes """
