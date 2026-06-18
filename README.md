@@ -131,8 +131,8 @@ python query.py         # Ask a question
 
 - [✓] Project setup and architecture design
 - [✓] Sprint 1 — Core RAG pipeline
-- [ ] Sprint 2 — Chat API endpoint
-- [ ] Sprint 3 — Client auth + multi-tenancy
+- [✓] Sprint 2 — Chat API endpoint
+- [✓] Sprint 3 — Client auth + multi-tenancy
 - [ ] Sprint 4 — Document upload + Celery processing
 - [ ] Sprint 5 — Client dashboard
 - [ ] Sprint 6 — Embeddable JS widget
