@@ -61,6 +61,7 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
                 "filename": str,
                 "chunk_count": int,
                 "status": "created" | "updated" | "duplicate"
+                "metadata": dict
             }
 
     Raises:
@@ -166,6 +167,7 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
 
         # --- RETURN RESULT ---
         result['status'] = status
+        result['metadata'] = metadata
         return result
 
     except Exception as e:
