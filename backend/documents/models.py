@@ -23,6 +23,17 @@ def validate_file_size(file):
         raise ValidationError("File size cannot exceed 10MB")
 
 class Document(BaseModel):
+    """
+    Represents a client-uploaded document in the AthenaChat ingestion pipeline.
+
+    Stores the raw uploaded file along with structured metadata needed
+    for querying and deduplication. The actual chunk text and embeddings
+    live in Qdrant — this model only tracks file-level state in Postgres.
+
+    Status lifecycle:
+        received -> processing -> created/updated/duplicate/failed
+    """
+    
     client = models.ForeignKey(
         Client,
         on_delete=models.CASCADE,
@@ -31,6 +42,7 @@ class Document(BaseModel):
     )
 
     filename = models.CharField(max_length=100)
+    original_filename = models.CharField(max_length=100, help_text="Max Length is 100 Characters.")
 
     doc_id = models.CharField(max_length=100)
 

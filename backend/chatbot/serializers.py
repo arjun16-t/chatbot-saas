@@ -54,5 +54,5 @@ class QuerySerializer(serializers.Serializer):
 class UnansweredQuerySerializer(serializers.ModelSerializer):
     class Meta:
         model = UnansweredQuery
-        fields = ['client_id', 'query', 'is_resolved']
-        read_only_fields = ['client_id', 'is_resolved']
+        fields = ['query', 'is_resolved']
+        read_only_fields = ['is_resolved']
