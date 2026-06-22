@@ -15,7 +15,7 @@ STATUS = [
 ]
 
 def client_file_path(instance, filename):
-    client = instance.client.id
+    client = str(instance.client.id)
     return f"{client}/{filename}"
 
 def validate_file_size(file):
@@ -42,7 +42,11 @@ class Document(BaseModel):
     )
 
     filename = models.CharField(max_length=100)
-    original_filename = models.CharField(max_length=100, help_text="Max Length is 100 Characters.")
+    original_filename = models.CharField(
+        max_length=100,
+        null=True, blank=True,
+        help_text="Max Length is 100 Characters."
+    )
 
     doc_id = models.CharField(max_length=100)
 

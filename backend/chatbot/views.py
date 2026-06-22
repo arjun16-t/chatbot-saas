@@ -43,7 +43,8 @@ class ChatView(APIView):
             )
         
         question = serializer.validated_data['question']
-        client_id = "temp_123" if settings.DEBUG else str(request.user.id)
+        client_id = str(request.user.id)
+        # client_id = "temp_123" if settings.DEBUG else str(request.user.id)
 
         try:
             result = query_rag(question, client_id)

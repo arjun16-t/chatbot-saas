@@ -60,8 +60,17 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
                 "doc_id": str,
                 "filename": str,
                 "chunk_count": int,
-                "status": "created" | "updated" | "duplicate"
-                "metadata": dict
+                "status": "created" | "updated" | "duplicate",
+                "metadata": {
+                    "filename": str,
+                    "original_name": str,
+                    "file_type": str,
+                    "size_bytes": int,
+                    "client_id": str,
+                    "upload_date": str,
+                    "file_hash": str,
+                    "doc_id": str,
+                }
             }
 
     Raises:

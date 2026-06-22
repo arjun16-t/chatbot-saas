@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework import status
 
 from django.db import transaction
@@ -21,7 +22,7 @@ class DocumentUploadView(APIView):
     the resulting doc_id, chunk_count and final status.
     """
 
-    def post(self, request) -> Response:
+    def post(self, request: Request) -> Response:
         """
         Handles POST /api/documents/upload/
 
@@ -33,15 +34,63 @@ class DocumentUploadView(APIView):
             400 on validation error.
             500 on ingestion pipeline failure.
         """
-        # TODO: validate incoming file via DocumentSerializer
-        # TODO: derive original_filename from request.FILES['file_raw'].name
-        # TODO: create Document with status='received', client=request.user
-        #       (use serializer.save(client=..., original_filename=...))
-        # TODO: get filesystem path via document.file_raw.path
-        # TODO: call ingest(file_path, client_id=str(request.user.id))
-        #       wrap in try/except — on failure, set status='failed' and save, return 500
-        # TODO: on success, update document with doc_id, chunk_count,
-        #       filename (system-generated from ingest result), and status from result
-        # TODO: log the outcome
-        # TODO: return serialized document with 201
-        pass
+        serializer = DocumentSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        if not serializer.is_valid():
+            logger.warning(f'Document Validation failed: {serializer.errors}')
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        original_filename = request.FILES['file_raw'].name
+        file_size = request.FILES['file_raw'].size
+
+        with transaction.atomic():
+            document = serializer.save(
+                client=request.user,
+                original_filename=original_filename,
+                file_size=file_size
+            )
+            logger.info(f'Successfully created the Document: {original_filename}')
+        
+        file_path = document.file_raw.path
+
+        try:
+            # document.status = 'processing'            Enable this after async and celery in sprint 3
+            # document.save(update_fields=['status'])
+            result = ingest(
+                client_id=str(request.user.id), 
+                file_path=file_path
+            )
+        except Exception as e:
+            document.status = 'failed'
+            document.save(update_fields=['status'])
+
+            logger.exception(f'Ingestion Failed')
+            return Response(
+                {'error': 'Ingestion Failed'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        with transaction.atomic():
+            document.filename = result['filename']
+            document.doc_id = result['doc_id']
+            document.file_hash = result['metadata']['file_hash']
+            document.chunk_count = result['chunk_count']
+            document.status = result['status']
+            document.save()
+            
+            logger.info(f'Successfully updated the Document: {original_filename}')
+
+        return Response(
+            {
+                'message': f'{original_filename} Document uploaded successfully.',
+                'status': result['status'],
+                'doc_id': result['doc_id'],
+                'chunk_count': result['chunk_count']
+            },
+            status=status.HTTP_201_CREATED
+        )

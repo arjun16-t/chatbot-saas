@@ -116,6 +116,8 @@ I'll do my best to help.
 """
             _save_unanswered_query(client_id, question, datetime.now())
             result_dict['answer'] = answer
+            latency_ms = (time.time() - start) * 1000
+            result_dict["metadata"]["latency_ms"] = round(latency_ms, 2)
             return result_dict
 
         context_parts = []
