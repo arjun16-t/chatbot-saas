@@ -1,8 +1,8 @@
 <p align="center">
-  <img alt="Chunky Logo" src="assets/AthenaBot.png" width="350px">
+  <img alt="AthenaChat Logo" src="assets/AthenaBot.png" width="350px">
 </p>
 
-# 🤖 AthenaBot — RAG-Powered Chatbot as a Service
+# 🤖 AthenaChat — RAG-Powered Chatbot as a Service
 
 > Embed an AI assistant trained on your own documents into any website in minutes.
 
@@ -10,17 +10,26 @@
 
 ## 📌 Overview
 
-ChatEmbed lets businesses add a smart, context-aware chatbot to their website by pasting a single script tag. The chatbot is powered by Retrieval-Augmented Generation (RAG) — meaning it answers questions based strictly on the business's own documents (FAQs, product info, service details), not general internet knowledge.
+AthenaChat lets businesses add a smart, context-aware chatbot to their website by pasting a single script tag. The chatbot is powered by Retrieval-Augmented Generation (RAG) — it answers questions strictly from the business's own documents (FAQs, product info, service details), not general internet knowledge.
+
+Every client's documents and conversations are fully isolated from every other client's, enforced at the data layer rather than just in application logic.
 
 ---
 
-## ✨ Features (Planned)
+## ✨ Features
 
-- 📄 Upload your own documents (PDF, text) as the chatbot's knowledge base
-- 🔍 RAG pipeline for accurate, grounded responses
-- 🌐 One-line embed for any website (`<script>` tag)
-- 🔐 Multi-tenant — each client's data is fully isolated
-- 📊 Usage dashboard for document management and analytics
+**Live today:**
+- 🔐 JWT-based client authentication with hashed, one-time-shown API keys
+- 📄 Document upload with validation, deduplication, and automatic re-indexing on updates
+- 🔍 Hybrid RAG retrieval (dense + sparse embeddings) for grounded, accurate answers
+- 🛡️ Multi-tenant isolation enforced at the vector-store query layer, not just the API layer
+- 🧠 Prompt-injection detection on incoming questions before they reach the LLM
+- 📋 Unresolved-query tracking, so clients can see what their chatbot couldn't answer
+
+**Planned:**
+- 🌐 One-line embed widget (`<script>` tag) for any website
+- 📊 Client dashboard for document management and analytics
+- ⚡ Async ingestion via Celery, plus rate limiting
 - 🚀 Freemium model with usage-based limits
 
 ---
@@ -34,16 +43,21 @@ Client Website
      │
  JS Widget (chat bubble)
      │
- Django REST API
+ Django REST API  ──── JWT Auth
      │
- RAG Pipeline
- ┌───┴───┐
-Qdrant  Groq LLM
-(vectors) (inference)
+ RAG Pipeline (rag/)
+ ┌───┴────────┐
+Qdrant       Groq LLM
+(hybrid       (Llama 3.3
+ search,       70B)
+ client-
+ filtered)
      │
  PostgreSQL
-(clients, logs)
+(clients, documents, unresolved queries)
 ```
+
+The RAG pipeline (`rag/`) is a standalone Python package, independent of Django, so it can be reused across other Athena products. The Django backend imports it directly rather than duplicating any retrieval or ingestion logic.
 
 ---
 
@@ -52,12 +66,14 @@ Qdrant  Groq LLM
 | Layer | Technology |
 |-------|-----------|
 | Backend | Django + Django REST Framework |
-| Vector DB | Qdrant |
-| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`) |
-| LLM Inference | Groq API |
+| Auth | JWT (`djangorestframework-simplejwt`) |
+| Vector DB | Qdrant — hybrid dense + sparse search, payload-filtered per client |
+| Dense Embeddings | `jina-embeddings-v5-text-nano` |
+| Sparse Embeddings | FastEmbed SPLADE |
+| LLM Inference | Groq API (Llama 3.3 70B) |
 | Relational DB | PostgreSQL |
-| Task Queue | Celery + Redis |
-| Frontend Widget | Vanilla JS |
+| Task Queue | Celery + Redis *(planned)* |
+| Frontend Widget | Vanilla JS *(planned)* |
 | Deployment | Railway / Render |
 
 ---
@@ -66,22 +82,23 @@ Qdrant  Groq LLM
 
 ```
 chatbot-saas/
-├── assets/             # contains images and media
-├── rag/                # Standalone RAG pipeline
-│   ├── ingest.py
-│   ├── query.py
+├── assets/                # images and media
+├── rag/                   # standalone RAG pipeline, importable as a package
+│   ├── ingest.py           # validate → dedupe → extract → chunk → embed → store
+│   ├── query.py             # embed → hybrid search → prompt → Groq → answer
 │   ├── config.py
-│   └── test_docs/
-├── backend/              # Django project
-│   ├── core/             # Auth, client management
-│   ├── chatbot/          # Chat API, RAG integration
-│   ├── documents/        # Upload, Celery tasks
-│   └── config/           # Settings, URLs, Celery config
-├── widget/               # Embeddable JS chat bubble
-├── dashboard/            # Client-facing React dashboard
-├── docs/                 # Architecture notes
+│   ├── test_docs/
+│   └── utils/
+├── backend/                # Django project
+│   ├── core/                # Client model, JWT auth (register/login/refresh)
+│   ├── chatbot/              # Chat API, unresolved-query tracking
+│   ├── documents/            # Document upload + ingestion API
+│   ├── utils/                 # shared logging
+│   └── config/                 # settings, URLs
+├── widget/                 # embeddable JS chat bubble (planned)
+├── dashboard/               # client-facing React dashboard (planned)
+├── docs/                    # architecture notes
 ├── .env.example
-├── .env
 └── README.md
 ```
 
@@ -89,11 +106,11 @@ chatbot-saas/
 
 ## 🚀 Getting Started (Local Setup)
 
-> ⚠️ Full setup guide coming soon. Currently in early development.
+> ⚠️ Still in active development — expect rough edges.
 
 ### Prerequisites
 - Python 3.10+
-- Docker (for Qdrant and Redis)
+- Docker (for Qdrant)
 - PostgreSQL
 
 ### 1. Clone the repo
@@ -103,9 +120,10 @@ cd chatbot-saas
 ```
 
 ### 2. Set up environment
+A single `.env` file at the project root is shared by both the `rag/` pipeline and the Django backend:
 ```bash
 cp .env.example .env
-# Fill in your API keys in .env
+# fill in your API keys and database credentials
 ```
 
 ### 3. Start Qdrant locally
@@ -113,31 +131,71 @@ cp .env.example .env
 docker run -p 6333:6333 qdrant/qdrant
 ```
 
-### 4. Install Python dependencies
+### 4. Set up PostgreSQL
+Create a database matching the `DB_NAME` in your `.env`.
+
+### 5. Install dependencies and run migrations
 ```bash
-cd rag/
+cd backend
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+python manage.py migrate
 ```
 
-### 5. Run the RAG pipeline
+### 6. Run the Django backend
 ```bash
-python ingest.py        # Upload a document
-python query.py         # Ask a question
+python manage.py runserver
+```
+
+### 7. Try the API
+```bash
+# Register a client
+curl -X POST http://127.0.0.1:8000/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "password": "yourpassword"}'
+
+# Log in to get a JWT
+curl -X POST http://127.0.0.1:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "you@example.com", "password": "yourpassword"}'
+
+# Upload a document (use the access token from login)
+curl -X POST http://127.0.0.1:8000/api/documents/upload/ \
+  -H "Authorization: Bearer <access_token>" \
+  -F "file_raw=@your_document.pdf"
+
+# Ask a question
+curl -X POST http://127.0.0.1:8000/api/chat/ \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What does this document say about X?"}'
+```
+
+### Running just the RAG pipeline (without Django)
+For experimenting with retrieval logic in isolation:
+```bash
+cd rag
+python -c "from ingest import ingest; print(ingest('test_docs/sebi.pdf', 'test_client'))"
+python -c "from query import query; print(query('your question', 'test_client'))"
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-- [✓] Project setup and architecture design
-- [✓] Sprint 1 — Core RAG pipeline
-- [✓] Sprint 2 — Chat API endpoint
-- [✓] Sprint 3 — Client auth + multi-tenancy
-- [ ] Sprint 4 — Document upload + Celery processing
-- [ ] Sprint 5 — Client dashboard
-- [ ] Sprint 6 — Embeddable JS widget
-- [ ] Sprint 7 — Deployment
-- [ ] Sprint 8 — Product website + first clients
+- [x] Standalone RAG pipeline — hybrid retrieval, chunking, deduplication
+- [x] Django REST API with JWT auth and multi-tenant isolation
+- [x] Document upload and ingestion endpoint
+- [x] Chat endpoint with unresolved-query tracking
+- [ ] Async document processing (Celery + Redis)
+- [ ] API rate limiting
+- [ ] Document management endpoints (list, retrieve, delete)
+- [ ] Client dashboard (React)
+- [ ] Embeddable JS widget
+- [ ] Production deployment
+- [ ] First clients
 
 ---
 
@@ -147,4 +205,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-> Built by [Arjun](https://github.com/YOUR_USERNAME) · Open to feedback and contributions after v1.0
+> Built by [Arjun](https://github.com/arjun16-t) · Open to feedback and contributions
