@@ -61,10 +61,13 @@ class Document(BaseModel):
         help_text="PDF/TXT/MD/DOCX - max file size 10MB"
     )
     file_hash = models.CharField(
-        max_length=64, blank=True,
+        max_length=64, blank=True, db_index=True,
         help_text="SHA256 hash of the file. Raw key is never stored."
     )
-    file_size = models.IntegerField(max_length=8, blank=True, null=True)
+    file_size = models.PositiveIntegerField(
+        blank=True,
+        null=True
+    )
 
     chunk_count = models.IntegerField(blank=True, null=True)
 
