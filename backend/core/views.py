@@ -44,9 +44,13 @@ class RegisterClientView(APIView):
 
         return Response(
             {
-                "client_id": str(client.id),
-                "email": client.email,
-                "api_key": api_key
+                "status": True,
+                "message": "Client registered successfully.",
+                "data": {
+                    "client_id": str(client.id),
+                    "email": client.email,
+                    "api_key": api_key
+                }
             },
             status=status.HTTP_201_CREATED
         )

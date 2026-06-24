@@ -71,5 +71,9 @@ class ChatView(APIView):
         )
 
         return Response(
-            response, status=status.HTTP_200_OK
+            {
+                "success": True,
+                "message": "Query processed successfully",
+                "data": response
+            }, status=status.HTTP_200_OK
         )

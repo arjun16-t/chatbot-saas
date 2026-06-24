@@ -88,10 +88,13 @@ class DocumentUploadView(APIView):
 
         return Response(
             {
+                'success': True,
                 'message': f'{original_filename} Document uploaded successfully.',
-                'status': result['status'],
-                'doc_id': result['doc_id'],
-                'chunk_count': result['chunk_count']
+                'data': {
+                    'doc_id': result['doc_id'],
+                    'chunk_count': result['chunk_count'],
+                    'status': result['status'],
+                }
             },
             status=status.HTTP_201_CREATED
         )
@@ -226,9 +229,8 @@ class DocumentDeleteView(DestroyAPIView):
         Restrict the base queryset to documents owned by the
         authenticated client.
 
-        TODO: filter Document.objects by `client=self.request.user`.
         """
-        pass
+        return Document.objects.filter(client=self.request.user)
 
     def perform_destroy(self, instance):
         """
