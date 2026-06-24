@@ -11,9 +11,10 @@ from core.exceptions import IngestionFail
 from .models import Document
 from .serializers import DocumentSerializer
 
-from rag.ingest import ingest
+from rag.ingest import ingest, generate_doc_id
 from rag.utils.qdrant import get_qdrant_client, remove_points
 from utils.logger import get_logger
+from utils.files import compute_uploaded_file_hash
 
 logger = get_logger(__name__)
 
@@ -38,28 +39,73 @@ class DocumentUploadView(APIView):
             400 on validation error.
             500 on ingestion pipeline failure.
         """
-        serializer = DocumentSerializer(
-            data=request.data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
+        uploaded_file = request.FILES['file_raw']
+        print(uploaded_file.name)
+        original_filename = uploaded_file.name
+        file_size = uploaded_file.size
         
-        original_filename = request.FILES['file_raw'].name
-        file_size = request.FILES['file_raw'].size
+        # --- PRE-INGEST DEDUP CHECK ---
+        doc_id = generate_doc_id(str(request.user.id), original_filename)
+        existing = Document.objects.filter(client=request.user, doc_id=doc_id).first()
 
-        with transaction.atomic():
-            document = serializer.save(
-                client=request.user,
-                original_filename=original_filename,
-                file_size=file_size
+        file_hash = compute_uploaded_file_hash(uploaded_file)
+        uploaded_file.seek(0)
+
+        if existing and existing.file_hash == file_hash:
+            logger.info(f'{original_filename} ({doc_id}) already exists, skipped!')
+            return Response(
+                {
+                    'success': True,
+                    'message': f'{original_filename} Document already exists.',
+                    'data': {
+                        'doc_id': str(doc_id),
+                        'chunk_count': existing.chunk_count,
+                        'status': 'duplicate',
+                    }
+                },
+                status=status.HTTP_201_CREATED
             )
+        
+        if existing and existing.file_hash != file_hash:
+            # --- UPDATED VERSION ---
+            existing.status = 'processing'
+            existing.save(update_fields=['status'])
+            
+            remove_points(
+                client=get_qdrant_client(),
+                doc_id=str(existing.doc_id),
+                client_id=str(existing.client_id)
+            )
+
+            document = existing
+            serializer = DocumentSerializer(document, data=request.data, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            with transaction.atomic():
+                document = serializer.save(
+                    client=request.user,
+                    original_filename=original_filename,
+                    file_size=file_size
+                )
+                logger.info('Updated existing Document row for re-ingestion: doc_id=%s', doc_id)
+        else:
+            serializer = DocumentSerializer(
+                data=request.data,
+                context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+
+            with transaction.atomic():
+                document = serializer.save(
+                    client=request.user,
+                    original_filename=original_filename,
+                    file_size=file_size
+                )
             logger.info(f'Successfully created the Document: {original_filename}')
         
         file_path = document.file_raw.path
-
         try:
-            # document.status = 'processing'            Enable this after async and celery in sprint 3
-            # document.save(update_fields=['status'])
+            document.status = 'processing'
+            document.save(update_fields=['status'])
             result = ingest(
                 client_id=str(request.user.id), 
                 file_path=file_path
@@ -80,7 +126,7 @@ class DocumentUploadView(APIView):
         with transaction.atomic():
             document.filename = result['filename']
             document.doc_id = result['doc_id']
-            document.file_hash = result['metadata']['file_hash']
+            document.file_hash = file_hash
             document.chunk_count = result['chunk_count']
             document.status = result['status']
             document.save()

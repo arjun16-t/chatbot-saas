@@ -41,14 +41,14 @@ class Document(BaseModel):
         editable=False,
     )
 
-    filename = models.CharField(max_length=100)
+    filename = models.CharField(max_length=255)
     original_filename = models.CharField(
-        max_length=100,
+        max_length=255,
         null=True, blank=True,
-        help_text="Max Length is 100 Characters."
+        help_text="Max Length is 255 Characters."
     )
 
-    doc_id = models.CharField(max_length=100)
+    doc_id = models.CharField(max_length=255)
 
     file_raw = models.FileField(
         upload_to=client_file_path,
