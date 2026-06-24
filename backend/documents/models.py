@@ -3,8 +3,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from core.models import BaseModel, Client
 
-import hashlib
-
 STATUS = [
     ('received', 'Received'),      # file uploaded, not yet processed
     ('processing', 'Processing'),  # ingest pipeline running
@@ -12,6 +10,8 @@ STATUS = [
     ('duplicate', 'Duplicate'),    # file already exists
     ('updated', 'Updated'),        # existing file re-indexed
     ('failed', 'Failed'),          # pipeline error
+    ('deleting', 'Deleting'),      # deleting points from Qdrant
+    ('deleted', 'Deleted'),        # deleted file from all 3 (Qdrant, Actual and Postgres)
 ]
 
 def client_file_path(instance, filename):

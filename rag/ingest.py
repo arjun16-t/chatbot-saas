@@ -32,13 +32,11 @@ from rag.utils.qdrant import (
     get_or_create_collection,
     add_points,
     remove_points,
+    get_qdrant_client,
     update_metadata as update_qdrant_metadata
 )
 
-
-# Module-level Qdrant client — created once, reused across all ingest calls
-client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-
+client = get_qdrant_client()
 
 def ingest(file_path: str | Path, client_id: str) -> dict:
     """
@@ -185,7 +183,7 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
         # the processed copy, not the original Django upload
         # cleanup_on_failure(file_path_obj, metadata_path)
         if doc_id is not None:
-            remove_points(client, doc_id, client_id)
+            remove_points(get_qdrant_client(), doc_id, client_id)
         
         if DEBUG:
             print(f'{Colors.RED} Failed to ingest files: {e} {Colors.END}')

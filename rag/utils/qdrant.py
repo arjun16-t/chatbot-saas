@@ -27,12 +27,22 @@ from qdrant_client.models import (
 )
 from rag.utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
 from rag.config import (
-    QDRANT_COLLECTION_NAME, EMBEDDING_MODEL,
+    QDRANT_COLLECTION_NAME, QDRANT_URL, QDRANT_API_KEY,
     VECTOR_SIZE, DEBUG, PREFETCH_LIMIT,
     CHUNK_SIZE, OVERLAP, Colors
 )
 from typing import Optional
 import uuid
+
+# Module-level Qdrant client — created once, reused across all calls
+_qdrant_client = None
+
+def get_qdrant_client() -> QdrantClient:
+    global _qdrant_client
+    if _qdrant_client is None:
+        _qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    
+    return _qdrant_client
 
 
 def get_or_create_collection(client: QdrantClient) -> CollectionInfo:

@@ -37,15 +37,13 @@ def custom_exception_handler(exc, context):
             view.__class__.__name__ if view else "unknown"
         )
         return None
+    
+    original_detail = response.data.get("detail", response.data) if isinstance(response.data, dict) else response.data
 
     if isinstance(exc, (ChatbotUnavailable, IngestionFail)):
         response.data = {
             "success": False,
-            "message": (
-                str(exc.detail)
-                if isinstance(exc.detail, str)
-                else "Request failed"
-            ),
+            "message": str(original_detail) if isinstance(original_detail, str) else "Request failed",
             "code": getattr(exc, "default_code", "error"),
             "errors": response.data,
         }
@@ -62,9 +60,7 @@ def custom_exception_handler(exc, context):
     else:
         response.data = {
             "success": False,
-            "message": (str(exc.detail)
-                if not isinstance(exc.detail, (dict, list))
-                else "Request failed"),
+            "message": str(original_detail) if not isinstance(original_detail, (dict, list)) else "Request failed",
             "code": getattr(exc, "default_code", "error"),
             "errors": response.data,
         }

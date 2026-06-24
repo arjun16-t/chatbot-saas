@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
-from rest_framework.generics import ListAPIView, RetrieveAPIView, DestroyAPIView
+from rest_framework.generics import ListAPIView, RetrieveDestroyAPIView
 from rest_framework import status
 
 from django.db import transaction
@@ -12,6 +12,7 @@ from .models import Document
 from .serializers import DocumentSerializer
 
 from rag.ingest import ingest
+from rag.utils.qdrant import get_qdrant_client, remove_points
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -129,6 +130,7 @@ class DocumentListView(ListAPIView):
             .filter(client=self.request.user)
             .select_related("client")
             .order_by('created_at')
+            .exclude(status__in=['deleting', 'deleted'])
         )
         status_filter = self.request.query_params.get('status')
         if status_filter:
@@ -141,111 +143,90 @@ class DocumentListView(ListAPIView):
         logger.debug('Successfully fetched documents for client=%s', request.user.id)
         return response
 
-
-class DocumentDetailView(RetrieveAPIView):
+class DocumentRetrieveDestroyView(RetrieveDestroyAPIView):
     """
-    Retrieve a single document belonging to the authenticated client.
+    Retrieve or delete a single document belonging to the authenticated client.
 
-    GET /api/documents/<uuid:doc_id>/
+    GET    /api/documents/<uuid:doc_id>/  — retrieve document detail
+    DELETE /api/documents/<uuid:doc_id>/  — delete document (Qdrant + file + Postgres)
 
-    Looks up a Document by its `doc_id` (the rag/ layer's deterministic
-    uuid5 identifier — NOT the Postgres primary key `id`), but only
-    within the authenticated client's own documents. A doc_id that
-    exists under a different client returns 404, identical to a
-    doc_id that doesn't exist at all — this is intentional and
-    prevents leaking information about other tenants' data.
+    Lookup is by `doc_id` (the rag/ layer's deterministic uuid5 identifier,
+    not the Postgres primary key), scoped to the authenticated client via
+    get_queryset(). Documents with status 'deleting' or 'deleted' are
+    excluded from the queryset entirely, so a repeated DELETE on a document
+    already mid-deletion returns 404 rather than re-entering perform_destroy.
 
     Permissions:
         Requires authentication (JWT).
 
     Returns:
-        200 OK: serialized Document object.
-        404 Not Found: doc_id does not exist under this client.
+        GET:    200 OK with serialized document, or 404 if not found/owned.
+        DELETE: 204 No Content on success, or 404 if not found/owned.
     """
     serializer_class = DocumentSerializer
-    lookup_field = "doc_id"
+    lookup_field = 'doc_id'
 
     def get_queryset(self):
         """
-        Restrict the base queryset to documents owned by the
-        authenticated client. DRF's get_object() will further filter
-        this queryset by `doc_id` (from the URL) before returning a
-        single row or raising Http404.
+        Restrict the queryset to the authenticated client's own documents,
+        excluding any currently mid-deletion or awaiting the periodic
+        cleanup sweep (Sprint 4). Shared by both retrieve() and destroy()
+        via get_object(), so the exclusion can't drift out of sync between
+        the two operations.
         """
-        return Document.objects.filter(client=self.request.user)
-    
+        return Document.objects.filter(
+            client=self.request.user
+        ).exclude(status__in=['deleting', 'deleted'])
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         logger.info('Successfully fetched document doc_id=%s', kwargs.get('doc_id'))
-        return Response(
-            {'success': True, 'data': serializer.data},
-            status=status.HTTP_200_OK
-        )
+        return Response({'success': True, 'data': serializer.data}, status=status.HTTP_200_OK)
 
-
-class DocumentDeleteView(DestroyAPIView):
-    """
-    Delete a single document belonging to the authenticated client.
-
-    DELETE /api/documents/<uuid:doc_id>/
-
-    Deletion must be coordinated across THREE systems, in a defined
-    order, since there is no cross-database transaction spanning
-    Postgres, Qdrant, and the filesystem:
-
-        1. Qdrant   — remove_points(doc_id, client_id) from rag/utils/qdrant.py
-        2. Filesystem — delete the file at document.file_raw.path
-        3. Postgres — delete the Document row itself (perform_destroy)
-
-    TODO (decide and document the ordering rationale):
-        Consider deleting in an order such that if a step fails partway,
-        the system is left in the SAFEST inconsistent state rather than
-        the worst one. E.g. ask yourself: would you rather have an
-        orphaned Qdrant vector with no Postgres row (silent, invisible
-        leftover data), or a Postgres row with no Qdrant vectors
-        (visible -- client can still see the doc in a list call,
-        re-attempt delete, or you can write a cleanup job)?
-
-        Also consider: should failures in step 1 or 2 block step 3
-        (the Postgres delete), or should Postgres delete proceed
-        regardless and failures just get logged for a reconciliation
-        job to catch later?
-
-    Permissions:
-        Requires authentication (JWT).
-
-    Returns:
-        204 No Content: deletion succeeded.
-        404 Not Found: doc_id does not exist under this client.
-        500 Internal Server Error: a downstream delete step failed
-            (exact behavior depends on the ordering decision above).
-    """
-    serializer_class = DocumentSerializer
-    lookup_field = "doc_id"
-
-    def get_queryset(self):
+    def perform_destroy(self, instance: Document):
         """
-        Restrict the base queryset to documents owned by the
-        authenticated client.
+        Delete a document across all three systems, in order:
+        Qdrant vectors -> filesystem file -> Postgres status.
 
+        The row is marked 'deleting' immediately (own committed write,
+        before any external call) so that a process crash mid-deletion
+        leaves a durable marker rather than silent inconsistent state.
+        No automatic rollback on failure (accepted gap for dev phase) --
+        recovery is deferred to Celery's retry/sweep mechanisms (Sprint 4).
+
+        TODO: introduce a DeletionFail APIException (mirroring IngestionFail)
+        once we confirm what failure modes remove_points actually raises,
+        so failures here get a proper error envelope instead of an
+        unhandled 500.
+        
+        TODO Sprint 4: once Celery is introduced, this should enqueue a task
+        instead of running synchronously, and a periodic sweep task should
+        bulk-delete all Document rows with status='deleted' once daily
+        (single DB write regardless of volume), rather than this view
+        ever deleting rows directly.
+
+        Raises:
+            RuntimeError: propagated from remove_points on genuine
+                Qdrant-side failure. Currently uncaught -- bubbles up
+                to custom_exception_handler as an unhandled exception.
         """
-        return Document.objects.filter(client=self.request.user)
+        instance.status = 'deleting'
+        instance.save(update_fields=['status'])
 
-    def perform_destroy(self, instance):
-        """
-        Override DRF's default perform_destroy (which just calls
-        instance.delete()) to also tear down the Qdrant vectors and
-        the file on disk, in the order decided above.
+        try:
+            remove_points(
+                client=get_qdrant_client(),
+                doc_id=str(instance.doc_id),
+                client_id=str(instance.client_id)
+            )
+            instance.file_raw.delete(save=False)
+        except Exception:
+            logger.exception(
+                'Document deletion failed mid-flight for doc_id=%s',
+                instance.doc_id
+            )
+            raise
 
-        TODO:
-            1. Call remove_points(doc_id=instance.doc_id,
-               client_id=str(instance.client_id)) from rag/utils/qdrant.py
-            2. Delete instance.file_raw from disk (instance.file_raw.delete(save=False))
-            3. Call instance.delete() (or super().perform_destroy(instance))
-
-        Wrap in try/except per step — log failures via the configured
-        logger rather than letting an unhandled exception bubble into
-        a generic 500 with no trace of which step failed.
-        """
-        pass
+        instance.status = 'deleted'
+        instance.save(update_fields=['status'])
