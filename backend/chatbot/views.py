@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from django.conf import settings
+from core.exceptions import ChatbotUnavailable
 
 from .models import UnansweredQuery
 from .serializers import QuerySerializer
@@ -34,13 +34,7 @@ class ChatView(APIView):
             500 on pipeline failure.
         """
         serializer = QuerySerializer(data=request.data)
-
-        if not serializer.is_valid():
-            logger.warning(f'Question validation failed: {serializer.errors}')
-            return Response(
-                {"errors": serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
         
         question = serializer.validated_data['question']
         client_id = str(request.user.id)
@@ -50,10 +44,7 @@ class ChatView(APIView):
             result = query_rag(question, client_id)
         except Exception as e:
             logger.exception(f'Query Pipeline Failed')
-            return Response(
-                {"error": "Failed to process query"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            raise ChatbotUnavailable()
         
         response = {
             "answer": result['answer'],
@@ -63,10 +54,10 @@ class ChatView(APIView):
         }
 
         if result['status'] == 'unanswered':
-            unanswerd_query = UnansweredQuery.objects.create(
+            UnansweredQuery.objects.create(
                 client=request.user,
                 query=result['query']
-                )
+            )
             logger.info(f"Unanswered Query: {result['query']} Saved!")
             
         

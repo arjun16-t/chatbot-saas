@@ -33,33 +33,20 @@ class RegisterClientView(APIView):
             201 with client_id, email and api_key on success.
             400 with validation errors on failure.
         """
-        try:
-            serializer = ClientSerializer(data = request.data)
+        serializer = ClientSerializer(data = request.data)
 
-            if not serializer.is_valid():
-                logger.error(f'Registration validation failed: {serializer.errors}')
-                return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            with transaction.atomic():
-                client, api_key = serializer.save()
-                logger.info(f'Client Object Registered: {str(client.id)} ({client.email})')
+        serializer.is_valid(raise_exception=True)
+        
+        with transaction.atomic():
+            client, api_key = serializer.save()
+            logger.info(f'Client Object Registered: {str(client.id)} ({client.email})')
 
 
-            return Response(
-                {
-                    "client_id": str(client.id),
-                    "email": client.email,
-                    "api_key": api_key
-                },
-                status=status.HTTP_201_CREATED
-            )
-        except Exception as e:
-            logger.exception("Error occurred while creating Client")
-            return Response(
-                {"error": str(e)} if settings.DEBUG else
-                {"error": "Registration failed. Please try again."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        return Response(
+            {
+                "client_id": str(client.id),
+                "email": client.email,
+                "api_key": api_key
+            },
+            status=status.HTTP_201_CREATED
+        )

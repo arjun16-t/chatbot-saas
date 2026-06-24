@@ -6,6 +6,8 @@ from rest_framework import status
 
 from django.db import transaction
 
+from core.exceptions import IngestionFail
+
 from .models import Document
 from .serializers import DocumentSerializer
 
@@ -39,12 +41,7 @@ class DocumentUploadView(APIView):
             data=request.data,
             context={'request': request}
         )
-        if not serializer.is_valid():
-            logger.warning(f'Document Validation failed: {serializer.errors}')
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
         
         original_filename = request.FILES['file_raw'].name
         file_size = request.FILES['file_raw'].size
@@ -66,15 +63,18 @@ class DocumentUploadView(APIView):
                 client_id=str(request.user.id), 
                 file_path=file_path
             )
-        except Exception as e:
+        except Exception:
             document.status = 'failed'
             document.save(update_fields=['status'])
 
-            logger.exception(f'Ingestion Failed')
-            return Response(
-                {'error': 'Ingestion Failed'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            logger.exception(
+                "Document ingestion failed",
+                extra={
+                    "document_id": str(document.id),
+                    "client_id": str(request.user.id),
+                },
             )
+            raise IngestionFail()
         
         with transaction.atomic():
             document.filename = result['filename']
