@@ -38,7 +38,7 @@ class RegisterClientView(APIView):
         serializer.is_valid(raise_exception=True)
         
         with transaction.atomic():
-            client, api_key = serializer.save()
+            client = serializer.save()
             logger.info(f'Client Object Registered: {str(client.id)} ({client.email})')
 
 
@@ -48,8 +48,7 @@ class RegisterClientView(APIView):
                 "message": "Client registered successfully.",
                 "data": {
                     "client_id": str(client.id),
-                    "email": client.email,
-                    "api_key": api_key
+                    "email": client.email
                 }
             },
             status=status.HTTP_201_CREATED
