@@ -1,13 +1,12 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from .models import Client
+from .models import Client, Project
 
 
 class ClientSerializer(serializers.ModelSerializer):
     """
     Serializer for client registration.
     Validates email, password and creates a new Client instance.
-    Returns the generated API key once — it is never retrievable again.
     """
     password = serializers.CharField(write_only=True, required=True)
 
@@ -43,5 +42,17 @@ class ClientSerializer(serializers.ModelSerializer):
         """
         password = validated_data.pop('password')
         email = validated_data.pop('email')
-        client, api_key = Client.objects.create_user_with_api_key(email=email, password=password, **validated_data)
-        return client, api_key
+        client = Client.objects.create_user(email=email, password=password, **validated_data)
+        return client
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Project. Never exposes api_key_hash. The raw
+    API key is only ever returned directly by the create/rotate
+    view responses, never via this serializer's normal output.
+    """
+    class Meta:
+        model = Project
+        fields = ['id', 'name', 'domain', 'is_active', 'widget_enabled', 'created_at']
+        read_only_fields = ['id', 'created_at']

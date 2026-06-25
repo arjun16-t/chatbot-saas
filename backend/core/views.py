@@ -1,13 +1,14 @@
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 
 from django.db import transaction
 from django.conf import settings
 
-from .models import Client
-from .serializers import ClientSerializer
+from .models import Client, Project
+from .serializers import ClientSerializer, ProjectSerializer
 
 from utils.logger import get_logger
 
@@ -53,3 +54,53 @@ class RegisterClientView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+
+class ProjectListCreateView(ListCreateAPIView):
+    """
+    GET  /api/projects/  -- list authenticated client's projects
+    POST /api/projects/  -- create a new project, returns raw API key once
+    """
+    serializer_class = ProjectSerializer
+
+    def get_queryset(self):
+        return Project.objects.filter(client=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        """
+        TODO: validate name/domain via serializer, then call
+        Project.objects.create_project_with_api_key(client=request.user, ...)
+        instead of serializer.save() -- this view bypasses normal
+        ModelSerializer.save() since key generation needs the manager.
+        Return {'success': True, 'data': {..., 'api_key': raw_key}}.
+        """
+        pass
+
+
+class ProjectRotateKeyView(APIView):
+    """
+    POST /api/projects/<uuid:pk>/rotate/
+    Issues a new API key for an existing project. Old key is
+    immediately invalid. Project row is unchanged otherwise.
+    """
+    def post(self, request, pk):
+        """
+        TODO: fetch Project scoped to request.user (404 if not owned),
+        generate new key + hash via secrets.token_urlsafe(32),
+        save api_key_hash, return raw key once.
+        """
+        pass
+
+
+class ProjectRevokeView(APIView):
+    """
+    PATCH /api/projects/<uuid:pk>/revoke/
+    Soft-revokes a project's API key by setting is_active=False.
+    Row and history are preserved.
+    """
+    def patch(self, request, pk):
+        """
+        TODO: fetch Project scoped to request.user (404 if not owned),
+        set is_active=False, save(update_fields=['is_active']).
+        """
+        pass

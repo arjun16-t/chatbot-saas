@@ -4,12 +4,12 @@ from pathlib import Path
 config=AutoConfig(search_path=Path(__file__).parent.parent)
 
 # utils/embedder.py
-EMBEDDING_MODEL="jinaai/jina-embeddings-v5-text-nano"
+EMBEDDING_MODEL=config("EMBEDDING_MODEL") or None
 VECTOR_SIZE = 768       # must match embedding model output
 MODELS_CACHE_DIR = os.path.join(os.path.dirname(__file__), "models")
 
 # Sparse Embedding Model
-SPARSE_MODEL="Qdrant/bm42-all-minilm-l6-v2-attentions"
+SPARSE_MODEL=config("SPARSE_MODEL") or None
 # utils/qdrant.py
 QDRANT_COLLECTION_NAME="rag-docs"
 QDRANT_URL=config("QDRANT_URL")
@@ -21,7 +21,7 @@ OVERLAP=100         # 100 = 20 tokens
 PREFETCH_LIMIT=20
 
 GROQ_API_KEY=config("GROQ_API_KEY")
-QUERYING_MODEL='llama-3.3-70b-versatile'
+QUERYING_MODEL=config("QUERYING_MODEL") or None
 
 # utils/pdf.py
 SUPPORTED_FORMATS = [".pdf", ".docx", ".txt", ".md"]
