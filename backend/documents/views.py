@@ -40,12 +40,18 @@ class DocumentUploadView(APIView):
             500 on ingestion pipeline failure.
         """
         uploaded_file = request.FILES['file_raw']
-        print(uploaded_file.name)
         original_filename = uploaded_file.name
         file_size = uploaded_file.size
         
         # --- PRE-INGEST DEDUP CHECK ---
         doc_id = generate_doc_id(str(request.user.id), original_filename)
+        logger.warning(
+            "DOC_ID_DEBUG client_id=%r filename=%r name_hex=%s doc_id=%s",
+            str(request.user.id),
+            original_filename,
+            original_filename.encode("utf-8").hex(),
+            doc_id,
+        )
         existing = Document.objects.filter(client=request.user, doc_id=doc_id).first()
 
         file_hash = compute_uploaded_file_hash(uploaded_file)
@@ -125,7 +131,7 @@ class DocumentUploadView(APIView):
         
         with transaction.atomic():
             document.filename = result['filename']
-            document.doc_id = result['doc_id']
+            document.doc_id = doc_id
             document.file_hash = file_hash
             document.chunk_count = result['chunk_count']
             document.status = result['status']
