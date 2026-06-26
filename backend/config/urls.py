@@ -6,8 +6,8 @@ from core.urls import auth_patterns, project_patterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include(auth_patterns)),          # if using reverse() later replace this with
-    path('api/projects/', include(project_patterns)),            # path('api/projects/', include((project_patterns, 'core'))),
+    path('api/auth/', include(auth_patterns)),                  # if using reverse() later replace this with
+    path('api/projects/', include(project_patterns)),           # path('api/projects/', include((project_patterns, 'core'))),
     path('api/', include('chatbot.urls')),
     path('api/', include('documents.urls')),
 ]
