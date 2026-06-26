@@ -1,8 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.exceptions import ChatbotUnavailable
+from core.permissions import ProjectDomainPermission
+from core.authentication import ProjectAPIKeyAuthentication
 
 from .models import UnansweredQuery
 from .serializers import QuerySerializer
@@ -20,7 +24,9 @@ class ChatView(APIView):
     saves unanswered queries to the database, and returns
     the answer with sources and metadata.
     """
-
+    authentication_classes = [JWTAuthentication, ProjectAPIKeyAuthentication]
+    permission_classes = [IsAuthenticated, ProjectDomainPermission]
+    
     def post(self, request) -> Response:
         """
         Handles POST /api/chat/
