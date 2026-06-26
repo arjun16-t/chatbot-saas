@@ -100,6 +100,8 @@ class Project(BaseModel):
         api_key_hash: SHA256 hash of raw key; raw key never persisted.
         is_active: soft-revoke flag.
     """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
     # Information
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=255)

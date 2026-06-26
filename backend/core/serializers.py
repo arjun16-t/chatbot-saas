@@ -1,5 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from urllib.parse import urlparse
+
 from .models import Client, Project
 
 
@@ -32,7 +34,7 @@ class ClientSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data: dict) -> Client:
         """
-        Creates a new Client instance with a hashed password and generated API key.
+        Creates a new Client instance with a hashed password.
         
         Args:
             validated_data: Cleaned data from the serializer.
@@ -56,3 +58,42 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['id', 'name', 'domain', 'is_active', 'widget_enabled', 'created_at']
         read_only_fields = ['id', 'created_at']
+    
+    def create(self, validated_data: dict) -> Project:
+        """
+        Creates a new Project instance with a hashed password and generated API key.
+        
+        Args:
+            validated_data: Cleaned data from the serializer.
+        
+        Returns:
+            projecct instance and api key (shown only once)
+        """
+        project, api_key = Project.objects.create_project_with_api_key(**validated_data)
+        project._raw_api_key = api_key
+        return project
+
+    def validate_domain(self, value: str) -> str:
+        """
+        Normalizes and validates the domain field.
+
+        Strips scheme/path/trailing slash if accidentally included
+        (e.g. "https://example.com/" -> "example.com"), lowercases
+        for consistent comparison against Origin/Referer headers later.
+
+        Args:
+            value: raw domain string from the request.
+
+        Returns:
+            Normalized domain string.
+
+        Raises:
+            serializers.ValidationError: if the value doesn't resemble
+                a valid domain after normalization.
+        """
+        if '://' not in value:
+            value = "https://" + value
+        
+        parsed = urlparse(value)
+        url = parsed.netloc
+        return url.strip().lower()

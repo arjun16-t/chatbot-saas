@@ -3,11 +3,16 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.serializers import ValidationError
 
 from django.db import transaction
-from django.conf import settings
+from django.shortcuts import get_object_or_404
+from django.db import IntegrityError
 
-from .models import Client, Project
+import secrets
+import hashlib
+
+from .models import Project
 from .serializers import ClientSerializer, ProjectSerializer
 
 from utils.logger import get_logger
@@ -45,7 +50,7 @@ class RegisterClientView(APIView):
 
         return Response(
             {
-                "status": True,
+                "success": True,
                 "message": "Client registered successfully.",
                 "data": {
                     "client_id": str(client.id),
@@ -67,40 +72,93 @@ class ProjectListCreateView(ListCreateAPIView):
         return Project.objects.filter(client=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        """
-        TODO: validate name/domain via serializer, then call
-        Project.objects.create_project_with_api_key(client=request.user, ...)
-        instead of serializer.save() -- this view bypasses normal
-        ModelSerializer.save() since key generation needs the manager.
-        Return {'success': True, 'data': {..., 'api_key': raw_key}}.
-        """
-        pass
+        serializer = self.serializer_class(data = request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            with transaction.atomic():
+                project = serializer.save(client=request.user)
+        except IntegrityError:
+            raise ValidationError(
+                {"domain": "A project with this domain already exists for your account."}
+            )
+
+        logger.info(f'New Project created: {project.name} for Client: {str(project.client_id)}')
+        
+        return Response(
+            {
+                "success": True,
+                "message": "Project registered successfully.",
+                "data": {
+                    "client_id": str(project.client_id),
+                    "name": project.name,
+                    "api_key": project._raw_api_key,
+                    "is_active": project.is_active
+                }
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 
 class ProjectRotateKeyView(APIView):
     """
     POST /api/projects/<uuid:pk>/rotate/
-    Issues a new API key for an existing project. Old key is
-    immediately invalid. Project row is unchanged otherwise.
+
+    Issues a new API key for an existing project owned by the
+    authenticated client. Old key is immediately invalid.
+    Rotating always reactivates the project (is_active=True),
+    even if it was previously revoked -- client must explicitly
+    revoke again if that wasn't intended.
     """
     def post(self, request, pk):
-        """
-        TODO: fetch Project scoped to request.user (404 if not owned),
-        generate new key + hash via secrets.token_urlsafe(32),
-        save api_key_hash, return raw key once.
-        """
-        pass
+        project = get_object_or_404(Project, client=request.user, pk=pk)
+
+
+        new_api_key = "ac_" + secrets.token_urlsafe(32)
+        new_api_hash = hashlib.sha256(new_api_key.encode()).hexdigest()
+
+        with transaction.atomic():
+            project.api_key_hash = new_api_hash
+            project.is_active = True
+            project.save(update_fields=['api_key_hash', 'is_active'])
+        
+        return Response(
+            {
+                "success": True,
+                "message": "New API key successfully generated",
+                "data": {
+                    "client_id": str(project.client_id),
+                    "name": project.name,
+                    "api_key": new_api_key,
+                    "is_active": project.is_active
+                }
+            },
+            status=status.HTTP_200_OK
+        )
 
 
 class ProjectRevokeView(APIView):
     """
     PATCH /api/projects/<uuid:pk>/revoke/
+
     Soft-revokes a project's API key by setting is_active=False.
     Row and history are preserved.
     """
     def patch(self, request, pk):
-        """
-        TODO: fetch Project scoped to request.user (404 if not owned),
-        set is_active=False, save(update_fields=['is_active']).
-        """
-        pass
+        project = get_object_or_404(Project, client=request.user, pk=pk)
+
+        project.is_active = False
+        project.save(update_fields=['is_active'])
+        
+        return Response(
+            {
+                "success": True,
+                "message": "API key successfully revoked",
+                "data": {
+                    "client_id": str(project.client_id),
+                    "name": project.name,
+                    "is_active": project.is_active
+                }
+            },
+            status=status.HTTP_200_OK
+        )
