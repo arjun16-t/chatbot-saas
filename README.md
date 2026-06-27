@@ -189,6 +189,7 @@ python -c "from query import query; print(query('your question', 'test_client'))
 - [x] Django REST API with JWT auth and multi-tenant isolation
 - [x] Document upload and ingestion endpoint
 - [x] Chat endpoint with unresolved-query tracking
+- [x] Project-wise API endpoints per client
 - [ ] Async document processing (Celery + Redis)
 - [ ] API rate limiting
 - [ ] Document management endpoints (list, retrieve, delete)
