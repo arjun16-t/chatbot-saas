@@ -46,12 +46,15 @@ INSTALLED_APPS = [
 # ==============================================================================
 # MIDDLEWARE
 # ==============================================================================
+IP_RATE_LIMIT = 100
+IP_RATE_WINDOW = 60
 
 MIDDLEWARE = [
     # CORS must be as high as possible — before any response is returned
     'corsheaders.middleware.CorsMiddleware',
 
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.IPRateLimitMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
