@@ -1,8 +1,13 @@
 from pathlib import Path
 from decouple import AutoConfig
 
+import sys
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
 
 # Point decouple to root .env file
 config = AutoConfig(search_path=BASE_DIR.parent)
@@ -41,6 +46,8 @@ INSTALLED_APPS = [
     'core',
     'chatbot',
     'documents',
+
+    'django_celery_beat',
 ]
 
 # ==============================================================================
@@ -269,3 +276,27 @@ LOGGING = {
         },
     },
 }
+
+
+# ==============================================================================
+# CELERY CONFIGURATION
+# ==============================================================================
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_RESULT_SERIALIZER = 'json'
+
+CELERY_TIMEZONE = 'Asia/Kolkata'
+CELERY_ENABLE_UTC = True
+
+CELERY_TASK_DEFAULT_QUEUE = "default"
+
+CELERY_TASK_TIME_LIMIT = 60 * 10        # what is a good value
+CELERY_TASK_SOFT_TIME_LIMIT = 60 * 8        # what is a good value
+
+CELERY_RESULT_EXPIRES = 60 * 60
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
