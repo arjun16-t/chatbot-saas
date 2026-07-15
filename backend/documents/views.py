@@ -46,11 +46,10 @@ class DocumentUploadView(APIView):
         # --- PRE-INGEST DEDUP CHECK ---
         doc_id = generate_doc_id(str(request.user.id), original_filename)
         logger.warning(
-            "DOC_ID_DEBUG client_id=%r filename=%r name_hex=%s doc_id=%s",
+            "DOC_ID_DEBUG client_id=%r filename=%r doc_id=%s",
             str(request.user.id),
             original_filename,
-            original_filename.encode("utf-8").hex(),
-            doc_id,
+            doc_id
         )
         existing = Document.objects.filter(client=request.user, doc_id=doc_id).first()
 
@@ -73,9 +72,8 @@ class DocumentUploadView(APIView):
             )
         
         if existing and existing.file_hash != file_hash:
-            # --- UPDATED VERSION ---
             existing.status = 'processing'
-            existing.save(update_fields=['status'])
+            existing.save(update_fields=['status']) 
             
             remove_points(
                 client=get_qdrant_client(),
@@ -123,7 +121,7 @@ class DocumentUploadView(APIView):
             logger.exception(
                 "Document ingestion failed",
                 extra={
-                    "document_id": str(document.id),
+                    "document_id": str(document.doc_id),
                     "client_id": str(request.user.id),
                 },
             )
