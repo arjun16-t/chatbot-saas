@@ -6,12 +6,13 @@ from rest_framework import status
 
 from django.db import transaction
 
-from core.exceptions import IngestionFail
+from kombu.exceptions import OperationalError
 
 from .models import Document
 from .serializers import DocumentSerializer
+from .tasks import ingest_document_task
 
-from rag.ingest import ingest, generate_doc_id
+from rag.ingest import generate_doc_id
 from rag.utils.qdrant import get_qdrant_client, remove_points
 from utils.logger import get_logger
 from utils.files import compute_uploaded_file_hash
@@ -21,10 +22,8 @@ logger = get_logger(__name__)
 
 class DocumentUploadView(APIView):
     """
-    Authenticated endpoint for uploading and ingesting client documents.
-    Creates a Document record with status='received', runs the file
-    through the RAG ingestion pipeline, then updates the record with
-    the resulting doc_id, chunk_count and final status.
+    Authenticated endpoint for uploading and enqueuing client documents
+    for asynchronous ingestion.
     """
 
     def post(self, request: Request) -> Response:
@@ -35,9 +34,8 @@ class DocumentUploadView(APIView):
             request: DRF request object containing the uploaded file.
 
         Returns:
-            201 with document details on success.
+            202 with document details on success.
             400 on validation error.
-            500 on ingestion pipeline failure.
         """
         uploaded_file = request.FILES['file_raw']
         original_filename = uploaded_file.name
@@ -45,17 +43,12 @@ class DocumentUploadView(APIView):
         
         # --- PRE-INGEST DEDUP CHECK ---
         doc_id = generate_doc_id(str(request.user.id), original_filename)
-        logger.warning(
-            "DOC_ID_DEBUG client_id=%r filename=%r doc_id=%s",
-            str(request.user.id),
-            original_filename,
-            doc_id
-        )
         existing = Document.objects.filter(client=request.user, doc_id=doc_id).first()
 
         file_hash = compute_uploaded_file_hash(uploaded_file)
         uploaded_file.seek(0)
 
+        # File Exists Already
         if existing and existing.file_hash == file_hash:
             logger.info(f'{original_filename} ({doc_id}) already exists, skipped!')
             return Response(
@@ -71,8 +64,9 @@ class DocumentUploadView(APIView):
                 status=status.HTTP_201_CREATED
             )
         
+        # File Exists but is updated
         if existing and existing.file_hash != file_hash:
-            existing.status = 'processing'
+            existing.status = 'received'
             existing.save(update_fields=['status']) 
             
             remove_points(
@@ -88,9 +82,12 @@ class DocumentUploadView(APIView):
                 document = serializer.save(
                     client=request.user,
                     original_filename=original_filename,
-                    file_size=file_size
+                    file_size=file_size,
+                    file_hash=file_hash
                 )
                 logger.info('Updated existing Document row for re-ingestion: doc_id=%s', doc_id)
+        
+        # New File
         else:
             serializer = DocumentSerializer(
                 data=request.data,
@@ -102,52 +99,29 @@ class DocumentUploadView(APIView):
                 document = serializer.save(
                     client=request.user,
                     original_filename=original_filename,
-                    file_size=file_size
+                    file_size=file_size,
+                    status='received',
+                    doc_id=doc_id,
+                    file_hash=file_hash
                 )
             logger.info(f'Successfully created the Document: {original_filename}')
         
-        file_path = document.file_raw.path
         try:
-            document.status = 'processing'
-            document.save(update_fields=['status'])
-            result = ingest(
-                client_id=str(request.user.id), 
-                file_path=file_path
-            )
-        except Exception:
-            document.status = 'failed'
-            document.save(update_fields=['status'])
+            ingest_document_task.delay(document.doc_id)
 
-            logger.exception(
-                "Document ingestion failed",
-                extra={
-                    "document_id": str(document.doc_id),
-                    "client_id": str(request.user.id),
-                },
-            )
-            raise IngestionFail()
-        
-        with transaction.atomic():
-            document.filename = result['filename']
-            document.doc_id = doc_id
-            document.file_hash = file_hash
-            document.chunk_count = result['chunk_count']
-            document.status = result['status']
-            document.save()
-            
-            logger.info(f'Successfully updated the Document: {original_filename}')
+        except OperationalError:
+            logger.warning(f"Failed to enqueue ingestion task for document: {document.doc_id}")
 
         return Response(
             {
                 'success': True,
                 'message': f'{original_filename} Document uploaded successfully.',
                 'data': {
-                    'doc_id': result['doc_id'],
-                    'chunk_count': result['chunk_count'],
-                    'status': result['status'],
+                    'doc_id': document.doc_id,
+                    'status': document.status,
                 }
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_202_ACCEPTED
         )
 
 class DocumentListView(ListAPIView):
