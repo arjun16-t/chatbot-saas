@@ -64,7 +64,7 @@ def ingest_document_task(self, document_id):
             )
 
 @shared_task
-def sweep_deleted_documents(client_id):
+def sweep_deleted_documents():
     """
     Bulk-delete all Document rows with status='deleted'.
 
