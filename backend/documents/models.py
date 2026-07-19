@@ -87,4 +87,4 @@ class Document(BaseModel):
         ]
     
     def __str__(self):
-        return f"{self.client.id}: {self.filename} - {self.status}"
+        return f"{self.filename} - {self.status}"

@@ -62,3 +62,22 @@ def ingest_document_task(self, document_id):
                     "document_id": document_id,
                 },
             )
+
+@shared_task
+def sweep_deleted_documents(client_id):
+    """
+    Bulk-delete all Document rows with status='deleted'.
+
+    Final step of the three-state deletion machine (Sprint 3.5) —
+    Qdrant vectors and files are already gone by this point; only
+    the empty Postgres row remains. Uses a single bulk .delete()
+    call, not a per-row loop.
+
+    Returns:
+        None. Logs the count of rows deleted.
+    """
+    try:
+        rows, _ = Document.objects.filter(status='deleted').delete()
+        logger.info(f'Batch Deletion Successful: {rows} Deleted')
+    except Exception:
+        logger.exception(f'Failed to Delete Rows')

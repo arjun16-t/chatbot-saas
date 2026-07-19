@@ -1,5 +1,9 @@
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import APIException
+from rest_framework.response import Response
+
+from django.conf import settings
+
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -13,8 +17,9 @@ def custom_exception_handler(exc, context):
     Falls back to DRF's default response for the actual status code
     and detail extraction, then reshapes the body. Unhandled
     (non-DRF) exceptions are not caught here -- they still propagate
-    to Django's normal 500 handling, since masking unexpected server
-    errors as if they were handled API errors hides real bugs.
+    to Django's normal 500 handling in development but not prodcution
+    since masking unexpected server errors as if they were handled
+    API errors hides real bugs.
 
     Args:
         exc: the raised exception instance.
@@ -36,7 +41,17 @@ def custom_exception_handler(exc, context):
             "Unhandled exception in %s",
             view.__class__.__name__ if view else "unknown"
         )
-        return None
+        if settings.DEBUG:
+            return None
+        return Response(
+            {
+                "success": False,
+                "message": "Something went wrong. Please try again later.",
+                "code": "internal_error",
+                "errors": None,
+            },
+            status=500,
+        )
     
     original_detail = response.data.get("detail", response.data) if isinstance(response.data, dict) else response.data
 
