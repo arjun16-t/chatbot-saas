@@ -1,7 +1,9 @@
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.urls import path
 from .views import (
     RegisterClientView,
+    LoginClientView,
+    RefreshClientView,
+    LogoutClientView,
     ProjectListCreateView,
     ProjectRotateKeyView,
     ProjectRevokeView
@@ -9,8 +11,9 @@ from .views import (
 
 auth_patterns = [
     path('register/', RegisterClientView.as_view(), name='register_client'),
-    path('login/', TokenObtainPairView.as_view(), name='login_jwt'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='refresh_jwt'),
+    path('login/', LoginClientView.as_view(), name='login'),
+    path('logout/', LogoutClientView.as_view(), name='logout'),
+    path('token/refresh/', RefreshClientView.as_view(), name='refresh_jwt'),
 ]
 
 project_patterns = [

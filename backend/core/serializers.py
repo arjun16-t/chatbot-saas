@@ -1,4 +1,10 @@
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from django.contrib.auth.password_validation import validate_password
+
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
+
 from rest_framework import serializers
 from urllib.parse import urlparse
 
@@ -31,6 +37,17 @@ class ClientSerializer(serializers.ModelSerializer):
         """
         validate_password(value)
         return value
+    
+    def validate_email(self, value):
+        validator = EmailValidator()
+        try:
+            validator(value)
+        except ValidationError:
+            raise serializers.ValidationError("Invalid email format")
+        # Check email uniqueness
+        if Client.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already exists")
+        return value
 
     def create(self, validated_data: dict) -> Client:
         """
@@ -46,6 +63,32 @@ class ClientSerializer(serializers.ModelSerializer):
         email = validated_data.pop('email')
         client = Client.objects.create_user(email=email, password=password, **validated_data)
         return client
+    
+class CustomTokenSerializer(TokenObtainPairSerializer):
+    """
+    Extends simplejwt's default token serializer to allow adding
+    custom claims to the access/refresh token payload.
+
+    Currently a placeholder -- no extra claims added yet.
+    Planned: embed subscription_plan so the frontend/widget can
+    read tier info from the token without an extra API call.
+    """
+
+    @classmethod
+    def get_token(cls, user):
+        """
+        Builds the token for the given user.
+
+        Args:
+            user: authenticated Client instance.
+
+        Returns:
+            Token with standard simplejwt claims.
+            TODO: add user.subscription_plan as a custom claim.
+        """
+        token = super().get_token(user)
+        # TODO: token['subscription_plan'] = user.subscription_plan
+        return token
 
 
 class ProjectSerializer(serializers.ModelSerializer):

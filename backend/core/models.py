@@ -1,7 +1,7 @@
 import uuid
 import secrets
 import hashlib
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 
 
@@ -23,6 +23,40 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+class ClientManager(BaseUserManager):
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True")
+
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True")
+
+
+        return self.create_user(email, password, **extra_fields)
+    
+    def create_user(
+        self,
+        email,
+        password=None,
+        **extra_fields
+    ):
+        if not email:
+            raise ValueError("Email is required")
+        client = self.model(
+            email=self.normalize_email(email),
+            **extra_fields
+        )
+
+        client.set_password(password)
+        client.save(using=self._db)
+
+        return client
+
+
+
 class Client(AbstractUser, BaseModel):
     """
     Custom user model representing a business client of AthenaChat.
@@ -30,6 +64,8 @@ class Client(AbstractUser, BaseModel):
     Stores only a SHA256 hash of the API key — the raw key is shown
     to the client once at generation time and never persisted.
     """
+    objects = ClientManager()
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,

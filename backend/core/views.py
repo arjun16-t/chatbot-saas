@@ -5,17 +5,23 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.serializers import ValidationError
 
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
+from django.conf import settings
 
 import secrets
 import hashlib
 
 from .models import Project
-from .serializers import ClientSerializer, ProjectSerializer
+from .serializers import ClientSerializer, ProjectSerializer, CustomTokenSerializer
 
 from utils.logger import get_logger
+from utils.token_obtain import set_refresh_cookie
 
 logger = get_logger(__name__)
 
@@ -46,19 +52,148 @@ class RegisterClientView(APIView):
         with transaction.atomic():
             client = serializer.save()
             logger.info(f'Client Object Registered: {str(client.id)} ({client.email})')
-
-
-        return Response(
+        
+        refresh = RefreshToken.for_user(client)
+        response = Response(
             {
                 "success": True,
                 "message": "Client registered successfully.",
                 "data": {
+                    "access": str(refresh.access_token),
                     "client_id": str(client.id),
                     "email": client.email
                 }
             },
             status=status.HTTP_201_CREATED
         )
+
+        return set_refresh_cookie(response, refresh)
+
+class LoginClientView(TokenObtainPairView):
+    """
+    Public endpoint for client login. Validates credentials via
+    CustomTokenSerializer, returns the access token in the response
+    body, and sets the refresh token as an httpOnly cookie.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        """
+        Handles POST /api/auth/login/
+
+        Args:
+            request: DRF request object containing email and password.
+
+        Returns:
+            200 with access token, client_id, and email on success.
+                Sets a rotated refresh_token cookie.
+            400 if credentials are invalid (handled by
+                custom_exception_handler via ValidationError).
+        """
+        serializer = CustomTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        client = serializer.user
+        
+        refresh = serializer.validated_data.get("refresh")
+
+        response = Response(
+            {
+                "success": True,
+                "message": "Client Logged in Successfully.",
+                "data": {
+                    "access": str(serializer.validated_data.get("access")),
+                    "client_id": str(client.id),
+                    "email": client.email
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+        return set_refresh_cookie(response, refresh)
+
+class RefreshClientView(TokenRefreshView):
+    """
+    Reads the refresh token from an httpOnly cookie instead of the
+    request body, validates it via TokenRefreshSerializer, and
+    rotates the refresh cookie on success.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        """
+        Handles POST /api/auth/token/refresh/
+
+        Args:
+            request: DRF request object. Refresh token expected in
+                the 'refresh_token' cookie, not the request body.
+
+        Returns:
+            200 with a new access token in the body on success.
+                Sets a rotated refresh_token cookie.
+            401 if the cookie is missing or the token is invalid/expired.
+        """
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response(
+                {"success": False, "message": "Refresh token missing.", "code": "no_refresh_cookie"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        serializer = self.get_serializer(data={"refresh": refresh_token})
+        serializer.is_valid(raise_exception=True)
+
+        access = serializer.validated_data.get("access")
+        refresh = serializer.validated_data.get("refresh")
+
+        response = Response(
+            {
+                "success": True,
+                "message": "Token Refreshed",
+                "data": {
+                    "access": access,
+                }
+            }, status=status.HTTP_200_OK
+        )
+
+        return set_refresh_cookie(response, refresh)
+
+class LogoutClientView(APIView):
+    """
+    Authenticated endpoint that blacklists the client's refresh token
+    and clears the refresh_token cookie, ending the session.
+    """
+    def post(self, request):
+        """
+        Handles POST /api/auth/logout/
+
+        Args:
+            request: DRF request object. Requires a valid access
+                token (IsAuthenticated). Refresh token read from cookie.
+
+        Returns:
+            205 on success, with the refresh_token cookie cleared.
+                Missing or already-invalid refresh cookies are treated
+                as a no-op, not an error.
+        """
+        refresh_token = request.COOKIES.get('refresh_token')
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                pass
+
+        response = Response(
+            {
+                "success": True,
+                "message": "Client Logged Out successfully.",
+                "data": {
+                    "client_id": str(request.user.id)
+                }
+            }, status=status.HTTP_205_RESET_CONTENT
+        )
+        response.delete_cookie("refresh_token")
+        return response
 
 
 class ProjectListCreateView(ListCreateAPIView):
