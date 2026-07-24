@@ -1,0 +1,250 @@
+/* --- Centered Hero Header --- */
+.hero-centered {
+    padding: 7rem 2rem 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero-text-container {
+    max-width: 850px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.eyebrow-text {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--primary);
+    letter-spacing: 0.08em;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+}
+
+.hero-title {
+    font-size: 3.75rem;
+    line-height: 1.05;
+    margin-bottom: 1.75rem;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+}
+
+.hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+    max-width: 85%;
+    line-height: 1.6;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1.25rem;
+}
+
+.hero-buttons.justify-center {
+    justify-content: center;
+}
+
+/* --- Base Theme & Hero Container --- */
+:root {
+    --bg-main: #fcfcfc;
+    --text-main: #111827;
+    --text-muted: #6b7280;
+    --chip-static-border: #d1d5db;
+    --chip-active-border: #93c5fd;
+    --chip-active-text: #1d4ed8;
+    --accent-glow: #f59e0b; 
+    --panel-bg: #111827;
+}
+
+.rag-hero-section {
+    position: relative;
+    width: 100%;
+    background-color: var(--bg-main);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.hero-titles {
+    text-align: center;
+    padding: 5rem 2rem 2rem;
+    position: relative;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hero-titles .eyebrow {
+    display: block;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--accent-glow);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+}
+
+.hero-titles h1 {
+    font-size: 3rem;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    letter-spacing: -0.03em;
+}
+
+.hero-titles p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* --- Camera & World --- */
+#camera-viewport {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+}
+#camera-viewport:active { cursor: grabbing; }
+
+#circuit-world {
+    position: absolute;
+    top: 0; left: 0;
+    width: 2800px; /* Increased to allow for more background circuits */
+    height: 600px;
+    transform-origin: 0 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 220px; 
+    padding: 0 100px;
+}
+
+#circuit-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.circuit-row {
+    display: flex;
+    justify-content: center; /* Centers chips tightly in the world */
+    gap: 200px;
+    align-items: flex-start;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.ingestion-row { padding-left: 150px; }
+
+/* --- Transformable Hardware Chips --- */
+.chip-node {
+    background: #ffffff;
+    border: 2px solid;
+    border-radius: 6px;
+    font-family: monospace;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    
+    /* Closed State Dimensions */
+    width: 130px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Pins */
+.chip-node::before, .chip-node::after {
+    content: '';
+    position: absolute;
+    left: 10px; right: 10px;
+    height: 6px;
+    background: repeating-linear-gradient(90deg, transparent, transparent 4px, currentColor 4px, currentColor 6px);
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+.chip-node::before { top: -6px; }
+.chip-node::after { bottom: -6px; }
+
+.chip-header {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* --- The Expanded State --- */
+.chip-node.expanded {
+    width: 320px;
+    height: 220px;
+    border-color: var(--accent-glow) !important;
+    background: var(--panel-bg);
+    color: #fff !important;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
+    z-index: 20;
+}
+.chip-node.expanded::before, .chip-node.expanded::after { opacity: 0; }
+
+.chip-node.expanded .chip-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--accent-glow);
+}
+
+.chip-internal {
+    flex-grow: 1;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    transition-delay: 0s;
+}
+.chip-node.expanded .chip-internal {
+    opacity: 1;
+    transition-delay: 0.3s; /* Fades in after expansion */
+}
+
+.terminal-text {
+    font-size: 0.8rem;
+    color: #a7f3d0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Row Styling */
+.static-chip { border-color: var(--chip-static-border); color: var(--text-muted); }
+.active-chip { border-color: var(--chip-active-border); color: var(--chip-active-text); }
+.db-chip { border-radius: 2px; border-color: var(--text-main); color: var(--text-main); }
+.generate-chip { border-color: var(--accent-glow); color: #d97706; }
+
+/* --- Line Hover Tooltip --- */
+#line-tooltip {
+    position: absolute;
+    background: rgba(17, 17, 17, 0.95);
+    border: 1px solid var(--accent-glow);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    pointer-events: none;
+    z-index: 50;
+    transform: translate(-50%, -150%);
+    transition: opacity 0.2s;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+#line-tooltip.hidden { opacity: 0; }

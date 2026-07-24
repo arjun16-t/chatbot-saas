@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Pipeline Visualization</title>
+    <!-- GSAP via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+    
+    <style>
+        /* --- Global Reset & Typography --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Pipeline Container --- */
+        .pipeline-container {
+            position: relative;
+            width: 820px;
+            height: 380px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+        }
+
+        /* --- Controls --- */
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 30;
+        }
+        button, select {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #374151;
+            transition: all 0.2s;
+        }
+        button:hover, select:hover { background: #f3f4f6; }
+
+        /* --- SVG Background Lines --- */
+        .paths-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- Nodes --- */
+        .node {
+            position: absolute;
+            width: 110px;
+            height: 44px;
+            background: #ffffff;
+            border: 2px solid;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            z-index: 10;
+        }
+
+        /* Row 1: Muted / Static */
+        .node.static {
+            border-color: #e5e7eb;
+            color: #9ca3af;
+        }
+        .node.static:hover {
+            border-color: #d1d5db;
+            color: #4b5563;
+        }
+
+        /* Row 2: Active Flow */
+        .node.active-flow {
+            border-color: #bfdbfe;
+            color: #3b82f6;
+        }
+        .node.active-flow:hover, .node.active-flow.highlight {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            transform: scale(1.06);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        /* --- The Glowing Token --- */
+        .token {
+            position: absolute;
+            top: 0; 
+            left: 0;
+            width: 12px;
+            height: 12px;
+            background-color: #f59e0b; /* Amber/Orange for high contrast */
+            border-radius: 50%;
+            box-shadow: 0 0 10px 3px rgba(245, 158, 11, 0.3);
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        /* --- Tooltips --- */
+        .tooltip {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            width: 240px;
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none; /* Prevent tooltip from interfering with hovers */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            z-index: 50;
+        }
+        /* Triangle Pointer */
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1f2937 transparent transparent transparent;
+        }
+        
+        .node:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        .tooltip.pinned {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pipeline-container">
+        
+        <!-- Controls -->
+        <div class="controls">
+            <button id="btn-toggle">Pause</button>
+            <select id="btn-speed">
+                <option value="0.5">Slow</option>
+                <option value="1" selected>Normal</option>
+                <option value="2">Fast</option>
+            </select>
+        </div>
+
+        <!-- SVG Paths -->
+        <svg class="paths-svg">
+            <!-- Row 1 Static Lines -->
+            <path d="M 130 102 L 180 102" stroke="#e5e7eb" stroke-width="2" />
+            <path d="M 290 102 L 340 102" stroke="#e5e7eb" stroke-width="2" />
+            <path d="M 450 102 L 500 102" stroke="#e5e7eb" stroke-width="2" />
+
+            <!-- Row 2 Active Track Background -->
+            <path id="active-path" d="M 75 262 L 715 262" stroke="#dbeafe" stroke-width="3" stroke-linecap="round" />
+
+            <!-- Vector DB down to Retrieve Connector -->
+            <!-- Orthogonal step: Down, Left, Down -->
+            <path d="M 555 124 L 555 180 L 395 180 L 395 240" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="4 4" stroke-linejoin="round"/>
+            <polygon points="390,235 400,235 395,243" fill="#9ca3af" />
+        </svg>
+
+        <!-- The Animated Token -->
+        <div class="token" id="query-token"></div>
+
+        <!-- ROW 1: INGESTION (Y=80) -->
+        <div class="node static" style="left: 20px; top: 80px;">Document
+            <div class="tooltip"><strong>Ingestion:</strong><br>Raw text data loaded from knowledge base.</div>
+        </div>
+        
+        <div class="node static" style="left: 180px; top: 80px;">Chunking
+            <div class="tooltip"><strong>Chunking:</strong><br>Text split into smaller, semantically meaningful segments.</div>
+        </div>
+        
+        <div class="node static" style="left: 340px; top: 80px;">Embed
+            <div class="tooltip"><strong>Embedding:</strong><br>Chunks converted into dense vector arrays.</div>
+        </div>
+        
+        <div class="node static" style="left: 500px; top: 80px;">Vector DB
+            <div class="tooltip"><strong>Vector DB:</strong><br>Vectors indexed and stored for fast similarity search.</div>
+        </div>
+
+        <!-- ROW 2: QUERY FLOW (Y=240) -->
+        <!-- data-progress maps the node's position along the 0-1 path -->
+        <div class="node active-flow" style="left: 20px; top: 240px;" data-progress="0">Query
+            <div class="tooltip"><strong>Query:</strong><br>"How long do I have to return an item?"</div>
+        </div>
+        
+        <div class="node active-flow" style="left: 180px; top: 240px;" data-progress="0.25">Embed
+            <div class="tooltip"><strong>Embed:</strong><br>Converting user query string into vector representation [0.12, -0.45...]</div>
+        </div>
+        
+        <div class="node active-flow" style="left: 340px; top: 240px;" data-progress="0.5">Retrieve
+            <div class="tooltip"><strong>Retrieve:</strong><br>Chunk: "You can return any item within 30 days of purchase..."<br><br><em>Similarity Score: 0.91</em></div>
+        </div>
+        
+        <div class="node active-flow" style="left: 500px; top: 240px;" data-progress="0.75">Augment
+            <div class="tooltip"><strong>Augment:</strong><br>Prompt = [Context: You can return any item within 30 days...] + [Query: How long do I have...]</div>
+        </div>
+        
+        <div class="node active-flow" style="left: 660px; top: 240px;" data-progress="1">Generate
+            <div class="tooltip"><strong>Generate:</strong><br>"You have 30 days from the purchase date to return an item based on the store policy."</div>
+        </div>
+
+    </div>
+
+    <script>
+        // Register GSAP Plugin
+        gsap.registerPlugin(MotionPathPlugin);
+
+        const nodes = document.querySelectorAll('.active-flow');
+        const token = document.getElementById('query-token');
+        let isPlaying = true;
+
+        // Initialize GSAP Timeline for the token
+        const tl = gsap.to(token, {
+            duration: 6,
+            ease: "none",
+            motionPath: {
+                path: "#active-path",
+                align: "#active-path",
+                alignOrigin: [0.5, 0.5] // Centers the DOM element exactly on the SVG line
+            },
+            repeat: -1,
+            onUpdate: function() {
+                const progress = this.progress();
+                
+                // Check token position against node progress thresholds
+                nodes.forEach(node => {
+                    const targetProgress = parseFloat(node.getAttribute('data-progress'));
+                    // Create a small "window" (~8% of the path) where the node lights up
+                    if (Math.abs(progress - targetProgress) < 0.08) {
+                        node.classList.add('highlight');
+                    } else {
+                        node.classList.remove('highlight');
+                    }
+                });
+            }
+        });
+
+        // --- Interactivity ---
+
+        // Controls
+        const btnToggle = document.getElementById('btn-toggle');
+        const btnSpeed = document.getElementById('btn-speed');
+
+        btnToggle.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                tl.play();
+                btnToggle.textContent = 'Pause';
+            } else {
+                tl.pause();
+                btnToggle.textContent = 'Play';
+            }
+        });
+
+        btnSpeed.addEventListener('change', (e) => {
+            tl.timeScale(parseFloat(e.target.value));
+        });
+
+        // Node Hover/Click Logic
+        const allNodes = document.querySelectorAll('.node');
+        
+        allNodes.forEach(node => {
+            // Hover pauses animation
+            node.addEventListener('mouseenter', () => {
+                tl.pause();
+            });
+            
+            // Mouse leave resumes animation (only if not manually paused via button)
+            node.addEventListener('mouseleave', () => {
+                if (isPlaying) tl.play();
+            });
+
+            // Click to pin tooltip
+            node.addEventListener('click', (e) => {
+                e.stopPropagation(); // Stop document click from firing
+                
+                const myTooltip = node.querySelector('.tooltip');
+                
+                // Clear all other pinned tooltips first
+                document.querySelectorAll('.tooltip').forEach(t => {
+                    if (t !== myTooltip) t.classList.remove('pinned');
+                });
+
+                // Toggle this specific tooltip
+                if (myTooltip) myTooltip.classList.toggle('pinned');
+            });
+        });
+
+        // Click anywhere else to unpin all tooltips
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.tooltip').forEach(t => {
+                t.classList.remove('pinned');
+            });
+        });
+    </script>
+
+</body>
+</html>

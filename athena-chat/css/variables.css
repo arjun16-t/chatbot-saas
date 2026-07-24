@@ -1,0 +1,61 @@
+/* ==========================================================================
+   AthenaChat — Design Tokens
+   Every color, font, spacing, radius, and shadow used across the site
+   should reference a variable from here. No raw hex/px values in other
+   CSS files — that's what keeps the whole site visually consistent and
+   makes a future re-theme a one-file change.
+   ========================================================================== */
+
+:root {
+
+  /* ---- Brand colors ---- */
+  --color-accent-primary: #C8860A;    /* Molten Gold — primary actions, links, focus */
+  --color-accent-secondary: #F5C842;  /* Pastel Gold — hover states, subtle highlights */
+  --color-bg: #FFFDF5;                /* Pure Off-White — page background */
+  --color-surface: #FFFFFF;           /* White — cards, table, inputs */
+  --color-border: #F0E6C8;            /* Gold Border — dividers, card/input borders */
+  --color-text-primary: #111111;      /* Ink Black — headings, body text */
+  --color-text-secondary: #6B6B6B;    /* Warm Gray — labels, timestamps, helper text */
+
+  /* ---- Status colors (semantic — not in original brand sheet, derived to
+     stay in the same warm/desaturated family so nothing feels foreign) ---- */
+  --color-status-processing: var(--color-accent-primary);
+  --color-status-success: #4A7C59;
+  --color-status-error: #B54834;
+  --color-status-neutral: var(--color-text-secondary);
+
+  /* ---- Fonts ---- */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ---- Type scale ---- */
+  --text-xs: 0.75rem;    /* 12px — timestamps, helper text */
+  --text-sm: 0.875rem;   /* 14px — table body, form labels */
+  --text-base: 1rem;     /* 16px — body default */
+  --text-lg: 1.25rem;    /* 20px — card titles */
+  --text-xl: 1.75rem;    /* 28px — page titles */
+  --text-2xl: 2.25rem;   /* 36px — auth hero heading */
+
+  /* ---- Spacing scale (4px base unit) ---- */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.5rem;   /* 24px */
+  --space-6: 2rem;     /* 32px */
+  --space-7: 3rem;     /* 48px */
+  --space-8: 4rem;     /* 64px */
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;     /* inputs, buttons */
+  --radius-md: 10px;    /* cards, table container */
+  --radius-full: 999px; /* status badge pills */
+
+  /* ---- Elevation ---- */
+  --shadow-card: 0 1px 2px rgba(17, 17, 17, 0.04), 0 1px 8px rgba(17, 17, 17, 0.04);
+
+  /* ---- Motion ---- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AthenaChat | RAG-Powered Chatbot as a Service</title>
+    
+    <!-- Fonts: Space Grotesk, Inter, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=JetBrains+Mono:wght@400&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+    
+    <!-- Master Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="assets/images/AthenaBot.png" alt="AthenaChat Logo" class="brand-logo">
+                <span class="brand-text">AthenaChat</span>
+            </div>
+            
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How it Works</a>
+                <a href="#docs">Documentation</a>
+            </nav>
+            
+            <div class="nav-actions">
+                <a href="login.html" class="btn btn-ghost">Login</a>
+                <a href="register.html" class="btn btn-primary">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Header -->
+        <section class="hero-centered">
+            <div class="hero-text-container">
+                <div class="eyebrow-text">// NEXT-GEN RAG CHATBOT-AS-A-SERVICE</div>
+                <h1 class="hero-title">Turn your static documents into an intelligent, 24/7 AI workforce.</h1>
+                <p class="hero-subtitle">
+                    Upload your knowledge base, customize your agent, and embed a context-aware chatbot on your site with a single line of JavaScript. Zero infrastructure required.
+                </p>
+                <div class="hero-buttons justify-center">
+                    <a href="register.html" class="btn btn-primary btn-large">Deploy Your Chatbot</a>
+                    <a href="#docs" class="btn btn-secondary btn-large">View Documentation</a>
+                </div>
+            </div>
+        </section>
+
+    <section class="rag-hero-section">
+        <div class="hero-titles">
+            <span class="eyebrow">Live Execution</span>
+            <h1>Enterprise RAG Engine</h1>
+            <p>Visualizing the real-time flow from raw ingestion to synthesized generation.</p>
+        </div>
+
+        <div id="camera-viewport">
+            <div id="circuit-world">
+                
+                <canvas id="circuit-canvas"></canvas>
+
+                <!-- ROW 1: INGESTION -->
+                <div class="circuit-row ingestion-row">
+                    <div class="chip-node static-chip" id="chip-doc" data-stage="docs">
+                        <div class="chip-header">Document</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node static-chip" id="chip-chunk" data-stage="chunk">
+                        <div class="chip-header">Chunking</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node static-chip" id="chip-embed1" data-stage="embed">
+                        <div class="chip-header">Embed</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node static-chip db-chip" id="chip-db" data-stage="db">
+                        <div class="chip-header">Vector DB</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                </div>
+
+                <!-- ROW 2: QUERY PIPELINE -->
+                <div class="circuit-row generation-row">
+                    <div class="chip-node active-chip" id="chip-query" data-stage="query">
+                        <div class="chip-header">Query</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node active-chip" id="chip-embed2" data-stage="embedQuery">
+                        <div class="chip-header">Embed</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node active-chip retrieve-chip" id="chip-retrieve" data-stage="retrieve">
+                        <div class="chip-header">Retrieve</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node active-chip" id="chip-augment" data-stage="augment">
+                        <div class="chip-header">Augment</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                    <div class="chip-node active-chip generate-chip" id="chip-generate" data-stage="generate">
+                        <div class="chip-header">Generate</div>
+                        <div class="chip-internal"><div class="terminal-text"></div></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Minimal tooltip for hovering over circuit lines -->
+        <div id="line-tooltip" class="hidden">
+            <span class="tooltip-data"></span>
+        </div>
+    </section>
+    </main>
+
+    <!-- Main Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="js/home.js"></script>
+</body>
+</html>

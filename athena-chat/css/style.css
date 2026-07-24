@@ -1,0 +1,11 @@
+/* ==========================================================================
+   AthenaChat — Global Stylesheet
+   This file has no rules of its own — it only pulls in the shared,
+   page-agnostic CSS. Link THIS file (not the individual files below) in
+   every HTML page's <head>, then add that page's own stylesheet
+   (home.css / auth.css / dashboard.css) as a second, separate <link>.
+   ========================================================================== */
+
+@import url('variables.css');
+@import url('base.css');
+@import url('components.css');
