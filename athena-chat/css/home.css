@@ -1,250 +1,239 @@
-/* --- Centered Hero Header --- */
-.hero-centered {
-    padding: 7rem 2rem 4rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    max-width: 1200px;
-    margin: 0 auto;
+/* ==========================================================================
+   AthenaChat — Homepage
+   Layout for index.html only. Relies on variables.css / base.css /
+   components.css (imported via style.css) for all tokens and shared
+   elements — this file is purely arrangement, no color/font values of
+   its own outside the RAG ticker section below.
+   ========================================================================== */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
 }
 
-.hero-text-container {
-    max-width: 850px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+/* ---- Public header variant ---- */
+.site-header .nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
 }
 
-.eyebrow-text {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--primary);
-    letter-spacing: 0.08em;
-    margin-bottom: 1.5rem;
-    text-transform: uppercase;
+.nav-link {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 
-.hero-title {
-    font-size: 3.75rem;
-    line-height: 1.05;
-    margin-bottom: 1.75rem;
-    letter-spacing: -0.04em;
-    color: var(--text-primary);
+.nav-link:hover {
+  color: var(--color-text-primary);
+  text-decoration: none;
 }
 
-.hero-subtitle {
-    font-size: 1.15rem;
-    color: var(--text-secondary);
-    margin-bottom: 3rem;
-    max-width: 85%;
-    line-height: 1.6;
+/* ---- Hero ---- */
+.hero {
+  text-align: center;
+  padding: var(--space-8) var(--space-6) var(--space-7);
+  max-width: 780px;
+  margin: 0 auto;
 }
 
-.hero-buttons {
-    display: flex;
-    gap: 1.25rem;
+.hero h1 {
+  font-size: var(--text-2xl);
+  line-height: 1.15;
+  margin-bottom: var(--space-4);
 }
 
-.hero-buttons.justify-center {
-    justify-content: center;
+.hero p {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
 }
 
-/* --- Base Theme & Hero Container --- */
-:root {
-    --bg-main: #fcfcfc;
-    --text-main: #111827;
-    --text-muted: #6b7280;
-    --chip-static-border: #d1d5db;
-    --chip-active-border: #93c5fd;
-    --chip-active-text: #1d4ed8;
-    --accent-glow: #f59e0b; 
-    --panel-bg: #111827;
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
 }
 
-.rag-hero-section {
-    position: relative;
-    width: 100%;
-    background-color: var(--bg-main);
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    border-bottom: 1px solid #e5e7eb;
+/* ---- RAG ticker section ---- */
+.ticker-section {
+  padding: 0 var(--space-6) var(--space-8);
 }
 
-.hero-titles {
-    text-align: center;
-    padding: 5rem 2rem 2rem;
-    position: relative;
-    z-index: 10;
-    pointer-events: none;
+.ticker-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: var(--space-5);
 }
 
-.hero-titles .eyebrow {
-    display: block;
-    font-family: monospace;
-    font-size: 0.85rem;
-    color: var(--accent-glow);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 1rem;
+.ticker-diagram {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.hero-titles h1 {
-    font-size: 3rem;
-    color: var(--text-main);
-    margin-bottom: 1rem;
-    letter-spacing: -0.03em;
+/* Diagram-internal styling (SVG classes) */
+.rt-node rect.node-body { fill: var(--color-surface); stroke: var(--color-border); stroke-width: 1.5; }
+.rt-node text { font-family: var(--font-display); font-weight: 600; font-size: 15px; fill: var(--color-text-primary); }
+.rt-node .pin { fill: var(--color-border); }
+.rt-line { fill: none; stroke: var(--color-border); stroke-width: 1.5; }
+.rt-junction { fill: var(--color-accent-primary); }
+.rt-row-label { font-family: var(--font-mono); font-size: 12px; fill: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.rt-label { opacity: 0; pointer-events: none; }
+.rt-label-bg { fill: var(--color-surface); stroke: var(--color-accent-primary); stroke-width: 1.5; }
+.rt-label-text { font-family: var(--font-mono); font-size: 12.5px; fill: var(--color-text-primary); }
+.rt-pulse { fill: var(--color-accent-primary); }
+
+/* ---- How it works ---- */
+.how-it-works {
+  padding: var(--space-8) var(--space-6);
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.hero-titles p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    max-width: 600px;
-    margin: 0 auto;
+.section-heading {
+  text-align: center;
+  margin-bottom: var(--space-7);
 }
 
-/* --- Camera & World --- */
-#camera-viewport {
-    width: 100%;
-    height: 600px;
-    position: relative;
-    overflow: hidden;
-    cursor: grab;
-}
-#camera-viewport:active { cursor: grabbing; }
-
-#circuit-world {
-    position: absolute;
-    top: 0; left: 0;
-    width: 2800px; /* Increased to allow for more background circuits */
-    height: 600px;
-    transform-origin: 0 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 220px; 
-    padding: 0 100px;
+.section-heading h2 {
+  margin-bottom: var(--space-2);
 }
 
-#circuit-canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 1;
-    pointer-events: none;
+.section-heading p {
+  color: var(--color-text-secondary);
 }
 
-.circuit-row {
-    display: flex;
-    justify-content: center; /* Centers chips tightly in the world */
-    gap: 200px;
-    align-items: flex-start;
-    position: relative;
-    z-index: 2;
-    width: 100%;
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-.ingestion-row { padding-left: 150px; }
-
-/* --- Transformable Hardware Chips --- */
-.chip-node {
-    background: #ffffff;
-    border: 2px solid;
-    border-radius: 6px;
-    font-family: monospace;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    
-    /* Closed State Dimensions */
-    width: 130px;
-    height: 44px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+.step {
+  text-align: center;
 }
 
-/* Pins */
-.chip-node::before, .chip-node::after {
-    content: '';
-    position: absolute;
-    left: 10px; right: 10px;
-    height: 6px;
-    background: repeating-linear-gradient(90deg, transparent, transparent 4px, currentColor 4px, currentColor 6px);
-    opacity: 0.5;
-    transition: opacity 0.3s;
-}
-.chip-node::before { top: -6px; }
-.chip-node::after { bottom: -6px; }
-
-.chip-header {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    font-weight: 600;
-    flex-shrink: 0;
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-accent-primary);
+  margin-bottom: var(--space-4);
 }
 
-/* --- The Expanded State --- */
-.chip-node.expanded {
-    width: 320px;
-    height: 220px;
-    border-color: var(--accent-glow) !important;
-    background: var(--panel-bg);
-    color: #fff !important;
-    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
-    z-index: 20;
-}
-.chip-node.expanded::before, .chip-node.expanded::after { opacity: 0; }
-
-.chip-node.expanded .chip-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--accent-glow);
+.step h3 {
+  margin-bottom: var(--space-2);
 }
 
-.chip-internal {
-    flex-grow: 1;
-    padding: 1rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    transition-delay: 0s;
-}
-.chip-node.expanded .chip-internal {
-    opacity: 1;
-    transition-delay: 0.3s; /* Fades in after expansion */
+.step p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
 }
 
-.terminal-text {
-    font-size: 0.8rem;
-    color: #a7f3d0;
-    line-height: 1.6;
-    white-space: pre-wrap;
+/* ---- Features ---- */
+.features {
+  padding: var(--space-8) var(--space-6);
 }
 
-/* Row Styling */
-.static-chip { border-color: var(--chip-static-border); color: var(--text-muted); }
-.active-chip { border-color: var(--chip-active-border); color: var(--chip-active-text); }
-.db-chip { border-radius: 2px; border-color: var(--text-main); color: var(--text-main); }
-.generate-chip { border-color: var(--accent-glow); color: #d97706; }
-
-/* --- Line Hover Tooltip --- */
-#line-tooltip {
-    position: absolute;
-    background: rgba(17, 17, 17, 0.95);
-    border: 1px solid var(--accent-glow);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 0.75rem;
-    pointer-events: none;
-    z-index: 50;
-    transform: translate(-50%, -150%);
-    transition: opacity 0.2s;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  max-width: 1100px;
+  margin: 0 auto;
 }
-#line-tooltip.hidden { opacity: 0; }
+
+.feature-card {
+  text-align: left;
+}
+
+.feature-card svg {
+  width: 22px;
+  height: 22px;
+  color: var(--color-accent-primary);
+  margin-bottom: var(--space-4);
+}
+
+.feature-card h3 {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-base);
+}
+
+.feature-card p {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* ---- CTA band ---- */
+.cta-band {
+  background-color: var(--color-accent-secondary);
+  padding: var(--space-7) var(--space-6);
+  text-align: center;
+}
+
+.cta-band h2 {
+  margin-bottom: var(--space-5);
+}
+
+/* Primary button needs to hold up against the gold band background —
+   swap it to ink so it doesn't blend into the surrounding gold */
+.cta-band .btn-primary {
+  background-color: var(--color-text-primary);
+}
+
+.cta-band .btn-primary:hover {
+  background-color: #2A2A2A;
+}
+
+/* ---- Footer ---- */
+.site-footer {
+  padding: var(--space-6);
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+}
+
+.site-footer .logo-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.site-footer .logo-group img {
+  height: 20px;
+  width: 20px;
+}
+
+.site-footer p {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .steps-grid,
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero h1 {
+    font-size: var(--text-xl);
+  }
+}
