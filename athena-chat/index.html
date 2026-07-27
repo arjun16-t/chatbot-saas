@@ -32,228 +32,190 @@
 
     <!-- ===================== HERO ===================== -->
     <section class="hero">
-      <h1>Turn your documents into an AI chatbot.</h1>
-      <p>Upload your docs, paste one script tag, done.</p>
-      <div class="hero-actions">
-        <a href="register.html" class="btn btn-primary">Deploy your chatbot</a>
-        <a href="#" class="btn btn-secondary">View documentation</a>
-      </div>
-    </section>
-
-    <!-- ===================== RAG TICKER (animated simulation) ===================== -->
-    <section class="ticker-section">
-      <div class="ticker-eyebrow">How AthenaChat processes your documents — live simulation</div>
-
-      <div class="ticker-diagram">
-        <svg viewBox="0 0 1200 460" xmlns="http://www.w3.org/2000/svg" overflow="visible">
-
-          <!-- Row labels -->
-          <text class="rt-row-label" x="0" y="30">01 — INGESTION</text>
-          <text class="rt-row-label" x="0" y="290">02 — QUERY</text>
-
-          <!-- Ingestion row -->
-          <g class="rt-node" id="node-document">
-            <rect class="node-body" x="0" y="70" width="170" height="80" rx="8"/>
-            <circle class="pin" cx="20" cy="70" r="3"/><circle class="pin" cx="50" cy="70" r="3"/><circle class="pin" cx="80" cy="70" r="3"/>
-            <circle class="pin" cx="20" cy="150" r="3"/><circle class="pin" cx="50" cy="150" r="3"/><circle class="pin" cx="80" cy="150" r="3"/>
-            <text x="85" y="115" text-anchor="middle" dominant-baseline="middle">Document</text>
-          </g>
-
-          <g class="rt-node" id="node-chunking">
-            <rect class="node-body" x="255" y="70" width="170" height="80" rx="8"/>
-            <circle class="pin" cx="275" cy="70" r="3"/><circle class="pin" cx="305" cy="70" r="3"/><circle class="pin" cx="335" cy="70" r="3"/>
-            <circle class="pin" cx="275" cy="150" r="3"/><circle class="pin" cx="305" cy="150" r="3"/><circle class="pin" cx="335" cy="150" r="3"/>
-            <text x="340" y="115" text-anchor="middle" dominant-baseline="middle">Chunking</text>
-          </g>
-
-          <g class="rt-node" id="node-embed-ingest">
-            <rect class="node-body" x="510" y="70" width="170" height="80" rx="8"/>
-            <circle class="pin" cx="530" cy="70" r="3"/><circle class="pin" cx="560" cy="70" r="3"/><circle class="pin" cx="590" cy="70" r="3"/>
-            <circle class="pin" cx="530" cy="150" r="3"/><circle class="pin" cx="560" cy="150" r="3"/><circle class="pin" cx="590" cy="150" r="3"/>
-            <text x="595" y="115" text-anchor="middle" dominant-baseline="middle">Embed</text>
-          </g>
-
-          <g class="rt-node" id="node-vectordb">
-            <rect class="node-body" x="765" y="70" width="190" height="80" rx="8"/>
-            <circle class="pin" cx="785" cy="70" r="3"/><circle class="pin" cx="815" cy="70" r="3"/><circle class="pin" cx="845" cy="70" r="3"/>
-            <circle class="pin" cx="785" cy="150" r="3"/><circle class="pin" cx="815" cy="150" r="3"/><circle class="pin" cx="845" cy="150" r="3"/>
-            <text x="860" y="115" text-anchor="middle" dominant-baseline="middle">Vector DB</text>
-          </g>
-
-          <!-- Query row -->
-          <g class="rt-node" id="node-query">
-            <rect class="node-body" x="0" y="330" width="150" height="80" rx="8"/>
-            <circle class="pin" cx="20" cy="330" r="3"/><circle class="pin" cx="50" cy="330" r="3"/>
-            <circle class="pin" cx="20" cy="410" r="3"/><circle class="pin" cx="50" cy="410" r="3"/>
-            <text x="75" y="375" text-anchor="middle" dominant-baseline="middle">Query</text>
-          </g>
-
-          <g class="rt-node" id="node-embed-query">
-            <rect class="node-body" x="230" y="330" width="150" height="80" rx="8"/>
-            <circle class="pin" cx="250" cy="330" r="3"/><circle class="pin" cx="280" cy="330" r="3"/>
-            <circle class="pin" cx="250" cy="410" r="3"/><circle class="pin" cx="280" cy="410" r="3"/>
-            <text x="305" y="375" text-anchor="middle" dominant-baseline="middle">Embed</text>
-          </g>
-
-          <g class="rt-node" id="node-retrieve">
-            <rect class="node-body" x="460" y="330" width="150" height="80" rx="8"/>
-            <circle class="pin" cx="480" cy="330" r="3"/><circle class="pin" cx="510" cy="330" r="3"/>
-            <circle class="pin" cx="480" cy="410" r="3"/><circle class="pin" cx="510" cy="410" r="3"/>
-            <text x="535" y="375" text-anchor="middle" dominant-baseline="middle">Retrieve</text>
-          </g>
-
-          <g class="rt-node" id="node-augment">
-            <rect class="node-body" x="690" y="330" width="150" height="80" rx="8"/>
-            <circle class="pin" cx="710" cy="330" r="3"/><circle class="pin" cx="740" cy="330" r="3"/>
-            <circle class="pin" cx="710" cy="410" r="3"/><circle class="pin" cx="740" cy="410" r="3"/>
-            <text x="765" y="375" text-anchor="middle" dominant-baseline="middle">Augment</text>
-          </g>
-
-          <g class="rt-node" id="node-generate">
-            <rect class="node-body" x="920" y="330" width="160" height="80" rx="8"/>
-            <circle class="pin" cx="940" cy="330" r="3"/><circle class="pin" cx="970" cy="330" r="3"/>
-            <circle class="pin" cx="940" cy="410" r="3"/><circle class="pin" cx="970" cy="410" r="3"/>
-            <text x="1000" y="375" text-anchor="middle" dominant-baseline="middle">Generate</text>
-          </g>
-
-          <!-- Connector lines -->
-          <g id="conn-doc-chunk">
-            <path class="rt-line" d="M 170 110 C 210 110, 210 82, 255 82"/>
-            <path class="rt-line" d="M 170 110 C 210 110, 210 96, 255 96"/>
-            <path class="rt-line" d="M 170 110 C 210 110, 210 110, 255 110"/>
-            <path class="rt-line" d="M 170 110 C 210 110, 210 124, 255 124"/>
-            <path class="rt-line" d="M 170 110 C 210 110, 210 138, 255 138"/>
-          </g>
-          <circle class="rt-junction" cx="170" cy="110" r="4"/>
-
-          <g id="conn-chunk-embed">
-            <path class="rt-line" d="M 425 82 H 510"/>
-            <path class="rt-line" d="M 425 96 H 510"/>
-            <path class="rt-line" d="M 425 110 H 510"/>
-            <path class="rt-line" d="M 425 124 H 510"/>
-            <path class="rt-line" d="M 425 138 H 510"/>
-          </g>
-
-          <g id="conn-embed-vdb">
-            <path class="rt-line" d="M 680 82 H 765"/>
-            <path class="rt-line" d="M 680 96 H 765"/>
-            <path class="rt-line" d="M 680 110 H 765"/>
-            <path class="rt-line" d="M 680 124 H 765"/>
-            <path class="rt-line" d="M 680 138 H 765"/>
-          </g>
-
-          <g id="conn-query-embed">
-            <path class="rt-line" d="M 150 370 H 230"/>
-          </g>
-
-          <g id="conn-embed-retrieve">
-            <path class="rt-line" d="M 380 370 H 460"/>
-          </g>
-
-          <g id="conn-vdb-retrieve">
-            <path class="rt-line" d="M 800 150 V 210 C 800 225, 480 225, 480 330"/>
-            <path class="rt-line" d="M 830 150 V 210 C 830 222, 505 222, 505 330"/>
-            <path class="rt-line" d="M 860 150 V 210 C 860 219, 530 219, 530 330"/>
-            <path class="rt-line" d="M 890 150 V 210 C 890 222, 555 222, 555 330"/>
-            <path class="rt-line" d="M 920 150 V 210 C 920 225, 580 225, 580 330"/>
-          </g>
-          <circle class="rt-junction" cx="800" cy="150" r="3"/><circle class="rt-junction" cx="830" cy="150" r="3"/>
-          <circle class="rt-junction" cx="860" cy="150" r="3"/><circle class="rt-junction" cx="890" cy="150" r="3"/>
-          <circle class="rt-junction" cx="920" cy="150" r="3"/>
-
-          <g id="conn-retrieve-augment">
-            <path class="rt-line" d="M 610 342 H 690"/>
-            <path class="rt-line" d="M 610 356 H 690"/>
-            <path class="rt-line" d="M 610 370 H 690"/>
-            <path class="rt-line" d="M 610 384 H 690"/>
-            <path class="rt-line" d="M 610 398 H 690"/>
-          </g>
-
-          <g id="conn-augment-generate">
-            <path class="rt-line" d="M 840 342 C 880 342, 880 370, 920 370"/>
-            <path class="rt-line" d="M 840 356 C 880 356, 880 370, 920 370"/>
-            <path class="rt-line" d="M 840 370 C 880 370, 880 370, 920 370"/>
-            <path class="rt-line" d="M 840 384 C 880 384, 880 370, 920 370"/>
-            <path class="rt-line" d="M 840 398 C 880 398, 880 370, 920 370"/>
-          </g>
-          <circle class="rt-junction" cx="920" cy="370" r="4"/>
-
-          <!-- Floating simulation labels -->
-          <g class="rt-label" id="label-document" transform="translate(85,48)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-chunking" transform="translate(340,48)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-embed-ingest" transform="translate(595,48)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-vectordb" transform="translate(860,48)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-query" transform="translate(75,300)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-embed-query" transform="translate(305,300)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-retrieve" transform="translate(535,300)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-augment" transform="translate(765,300)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-          <g class="rt-label" id="label-generate" transform="translate(1000,300)">
-            <rect class="rt-label-bg" x="-60" y="-16" width="120" height="28" rx="6"/>
-            <text class="rt-label-text" text-anchor="middle" dy="4"></text>
-          </g>
-
-        </svg>
-      </div>
-    </section>
-
-    <!-- ===================== HOW IT WORKS ===================== -->
-    <section class="how-it-works" id="how-it-works">
-      <div class="container">
-        <div class="section-heading">
-          <h2>How it works</h2>
-          <p>Three steps, no code required.</p>
+      <div class="hero-bubbles" aria-hidden="true">
+        <div class="bubble-cluster top-left">
+          <div class="bubble bubble-question"></div>
+          <div class="bubble bubble-answer">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+          </div>
         </div>
-        <div class="steps-grid">
-          <div class="step">
-            <div class="step-number">1</div>
-            <h3>Upload your documents</h3>
-            <p>FAQs, product info, policies — PDF, Word, or plain text.</p>
-          </div>
-          <div class="step">
-            <div class="step-number">2</div>
-            <h3>We index them</h3>
-            <p>Your content is chunked, embedded, and stored in a private, isolated index just for you.</p>
-          </div>
-          <div class="step">
-            <div class="step-number">3</div>
-            <h3>Paste one script tag</h3>
-            <p>Drop it into your site and your chatbot is live — answering only from your own documents.</p>
+        <div class="bubble-cluster bottom-right">
+          <div class="bubble bubble-question"></div>
+          <div class="bubble bubble-answer">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
           </div>
         </div>
       </div>
+      <div class="hero-content">
+        <h1 class="reveal">Turn your documents into an AI chatbot.</h1>
+        <p class="reveal">Upload your docs, paste one script tag, done.</p>
+        <div class="hero-actions reveal">
+          <a href="register.html" class="btn btn-primary">Deploy your chatbot</a>
+          <a href="#" class="btn btn-secondary">View documentation</a>
+        </div>
+      </div>
     </section>
+
+    <div class="section-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
+        <path class="divider-fill-surface" d="M0,32 C360,74 1080,0 1440,42 L1440,74 L0,74 Z"/>
+      </svg>
+    </div>
+    <!-- ===================== HOW IT WORKS + RAG PIPELINE (combined, interactive) ===================== -->
+    <section class="pipeline-section reveal" id="how-it-works">
+      <div class="section-heading">
+        <h2>How it works</h2>
+        <p>Click any step to see what actually happens — or click the connectors to step through it like a tour.</p>
+      </div>
+
+      <div class="pipeline-grid">
+
+        <!-- LEFT: synced info column -->
+        <div class="pipeline-info" id="pipeline-info">
+          <div class="info-item" data-node="document">
+            <h4>Document</h4>
+            <p>Your file (PDF, DOCX, TXT, or MD) is validated for format and size, then hashed with SHA-256 to check whether it's already been indexed before any processing begins.</p>
+          </div>
+          <div class="info-item" data-node="chunking">
+            <h4>Chunking</h4>
+            <p>The document is split using a recursive character splitter — 1500 characters per chunk with 150 characters of overlap, so context isn't lost at chunk boundaries.</p>
+          </div>
+          <div class="info-item" data-node="embed-ingest">
+            <h4>Embed</h4>
+            <p>Each chunk gets two embeddings: a 768-dim dense vector for semantic meaning, and a sparse SPLADE vector for exact keyword matching — enabling hybrid search later.</p>
+          </div>
+          <div class="info-item" data-node="vectordb">
+            <h4>Vector DB</h4>
+            <p>Both vectors are stored in Qdrant, tagged with your client ID. Every future query is filtered by that tag, so your documents are never visible to another client.</p>
+          </div>
+          <div class="info-item" data-node="query">
+            <h4>Query</h4>
+            <p>A visitor asks a question through your embedded chat widget — this is where a real conversation with your chatbot begins.</p>
+          </div>
+          <div class="info-item" data-node="embed-query">
+            <h4>Embed</h4>
+            <p>The question is embedded the same way your documents were — dense and sparse — so it can be directly compared against what's stored in Vector DB.</p>
+          </div>
+          <div class="info-item" data-node="retrieve">
+            <h4>Retrieve</h4>
+            <p>Qdrant runs a hybrid search combining both vector types, using Reciprocal Rank Fusion to merge semantic and keyword results into one ranked list of candidate chunks.</p>
+          </div>
+          <div class="info-item" data-node="augment">
+            <h4>Augment</h4>
+            <p>The top-ranked chunks are combined with your original question into a single prompt, with instructions that keep the model from answering outside your documents.</p>
+          </div>
+          <div class="info-item" data-node="generate">
+            <h4>Generate</h4>
+            <p>The prompt is sent to Groq's Llama 3.3 70B model, which generates an answer grounded only in your content — with the source chunks it used.</p>
+          </div>
+        </div>
+
+        <!-- RIGHT: vertical flowchart, top-down -->
+        <div class="pipeline-flow" id="pipeline-flow">
+
+          <div class="flow-card" data-node="document">
+            <div class="flow-card-header"><i data-lucide="file-text"></i><span>Document</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Fetched</div>
+              <div class="substep">Validated</div>
+              <div class="substep">Hashed</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="chunking"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="chunking">
+            <div class="flow-card-header"><i data-lucide="scissors"></i><span>Chunking</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Split into chunks</div>
+              <div class="substep">Overlap applied</div>
+              <div class="substep">Ready to embed</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="embed-ingest"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="embed-ingest">
+            <div class="flow-card-header"><i data-lucide="layers"></i><span>Embed</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Dense vector created</div>
+              <div class="substep">Sparse vector created</div>
+              <div class="substep">Pair stored together</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="vectordb"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="vectordb">
+            <div class="flow-card-header"><i data-lucide="database"></i><span>Vector DB</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Tagged with client ID</div>
+              <div class="substep">Indexed in Qdrant</div>
+              <div class="substep">Ready to search</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="query"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="query">
+            <div class="flow-card-header"><i data-lucide="message-circle"></i><span>Query</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Question received</div>
+              <div class="substep">Sent to embedder</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="embed-query"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="embed-query">
+            <div class="flow-card-header"><i data-lucide="layers"></i><span>Embed</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Dense + sparse embedded</div>
+              <div class="substep">Ready to search Vector DB</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="retrieve"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="retrieve">
+            <div class="flow-card-header"><i data-lucide="search"></i><span>Retrieve</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Hybrid search run</div>
+              <div class="substep">Results fused (RRF)</div>
+              <div class="substep">Top chunks selected</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="augment"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="augment">
+            <div class="flow-card-header"><i data-lucide="git-merge"></i><span>Augment</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Chunks + question combined</div>
+              <div class="substep">Prompt constructed</div>
+            </div>
+          </div>
+          <div class="flow-connector" data-next="generate"><div class="flow-pulse"></div></div>
+
+          <div class="flow-card" data-node="generate">
+            <div class="flow-card-header"><i data-lucide="sparkles"></i><span>Generate</span></div>
+            <div class="flow-substeps">
+              <div class="substep">Sent to Llama 3.3 70B</div>
+              <div class="substep">Answer generated</div>
+              <div class="substep">Sources cited</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
+        <path class="divider-fill-bg" d="M0,42 C400,0 1040,74 1440,32 L1440,74 L0,74 Z"/>
+      </svg>
+    </div>
 
     <!-- ===================== FEATURES ===================== -->
     <section class="features" id="features">
       <div class="container">
-        <div class="section-heading">
+        <div class="section-heading reveal">
           <h2>Built for real deployments</h2>
         </div>
-        <div class="features-grid">
+        <div class="features-grid reveal-stagger">
           <div class="card feature-card">
             <i data-lucide="shield-check"></i>
             <h3>Fully isolated per client</h3>
@@ -273,11 +235,23 @@
       </div>
     </section>
 
+    <div class="section-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
+        <path class="divider-fill-gold" d="M0,32 C360,74 1080,0 1440,42 L1440,74 L0,74 Z"/>
+      </svg>
+    </div>
+
     <!-- ===================== CTA BAND ===================== -->
-    <section class="cta-band">
+    <section class="cta-band reveal">
       <h2>Ready to give your website a brain?</h2>
       <a href="register.html" class="btn btn-primary">Get started free</a>
     </section>
+
+    <div class="section-divider" aria-hidden="true">
+      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
+        <path class="divider-fill-bg" d="M0,42 C400,0 1040,74 1440,32 L1440,74 L0,74 Z"/>
+      </svg>
+    </div>
 
   </main>
 
@@ -292,8 +266,9 @@
 
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="js/home.js"></script>
+  <script src="js/scroll-reveal.js"></script>
   <script src="js/rag-ticker.js"></script>
 </body>
 </html>
