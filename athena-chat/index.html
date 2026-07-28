@@ -15,244 +15,269 @@
 <body>
 
   <!-- ===================== HEADER ===================== -->
+  <!-- ===================== HEADER ===================== -->
   <header class="site-header">
     <div class="logo-group">
       <img src="assets/images/AthenaBot.png" alt="AthenaChat logo">
       <span class="brand-name">AthenaChat</span>
     </div>
+    <!-- Centered Nav Links -->
     <nav class="nav-links">
       <a href="#how-it-works" class="nav-link">How it works</a>
       <a href="#features" class="nav-link">Features</a>
-      <a href="login.html" class="nav-link">Log in</a>
-      <a href="register.html" class="btn btn-primary">Get started</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
     </nav>
+    <!-- Right aligned auth -->
+    <div class="header-auth">
+      <a href="login.html" class="nav-link">Log in</a>
+      <a href="register.html" class="btn btn-primary">Sign up</a>
+    </div>
   </header>
 
   <main>
-
     <!-- ===================== HERO ===================== -->
     <section class="hero">
-      <div class="hero-bubbles" aria-hidden="true">
-        <div class="bubble-cluster top-left">
-          <div class="bubble bubble-question"></div>
-          <div class="bubble bubble-answer">
-            <div class="typing-dots"><span></span><span></span><span></span></div>
-          </div>
+      
+      <!-- Soft ambient background glow -->
+      <div class="hero-glow"></div>
+
+      <!-- Floating UI Cards (Image based) -->
+      <div class="hero-floating-ui" aria-hidden="true">
+        
+        <!-- Floating Image 1: Left -->
+        <div class="floating-card float-left">
+          <img src="assets/images/ui-snippet-document.png" alt="Document processing UI">
         </div>
-        <div class="bubble-cluster bottom-right">
-          <div class="bubble bubble-question"></div>
-          <div class="bubble bubble-answer">
-            <div class="typing-dots"><span></span><span></span><span></span></div>
-          </div>
+
+        <!-- Floating Image 2: Bottom -->
+        <div class="floating-card float-bottom">
+          <img src="assets/images/ui-snippet-chat.png" alt="Chat interface UI">
         </div>
+
+        <!-- Floating Image 3: Right -->
+        <div class="floating-card float-right">
+          <img src="assets/images/ui-snippet-latency.png" alt="Latency metrics UI">
+        </div>
+
       </div>
+
+      <!-- Main Text Content -->
       <div class="hero-content">
-        <h1 class="reveal">Turn your documents into an AI chatbot.</h1>
-        <p class="reveal">Upload your docs, paste one script tag, done.</p>
+        <div class="hero-badge reveal">
+          <i data-lucide="zap"></i>
+          <span>Live in under 2 minutes.</span>
+        </div>
+        
+        <h1 class="reveal">Turn your documents into an <span class="text-gradient">AI chatbot.</span></h1>
+        <p class="reveal">AthenaChat helps teams instantly vectorize their PDFs, docs, and text files into a highly accurate, deployable AI assistant.</p>
+        
+        <!-- Updated Actions (Removed social proof, updated text) -->
         <div class="hero-actions reveal">
-          <a href="register.html" class="btn btn-primary">Deploy your chatbot</a>
-          <a href="#" class="btn btn-secondary">View documentation</a>
+          <a href="register.html" class="btn btn-primary btn-lg">Deploy your chatbot</a>
         </div>
       </div>
     </section>
 
-    <div class="section-divider" aria-hidden="true">
-      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
-        <path class="divider-fill-surface" d="M0,32 C360,74 1080,0 1440,42 L1440,74 L0,74 Z"/>
-      </svg>
-    </div>
-    <!-- ===================== HOW IT WORKS + RAG PIPELINE (combined, interactive) ===================== -->
-    <section class="pipeline-section reveal" id="how-it-works">
-      <div class="section-heading">
-        <h2>How it works</h2>
-        <p>Click any step to see what actually happens — or click the connectors to step through it like a tour.</p>
-      </div>
-
-      <div class="pipeline-grid">
-
-        <!-- LEFT: synced info column -->
-        <div class="pipeline-info" id="pipeline-info">
-          <div class="info-item" data-node="document">
-            <h4>Document</h4>
-            <p>Your file (PDF, DOCX, TXT, or MD) is validated for format and size, then hashed with SHA-256 to check whether it's already been indexed before any processing begins.</p>
-          </div>
-          <div class="info-item" data-node="chunking">
-            <h4>Chunking</h4>
-            <p>The document is split using a recursive character splitter — 1500 characters per chunk with 150 characters of overlap, so context isn't lost at chunk boundaries.</p>
-          </div>
-          <div class="info-item" data-node="embed-ingest">
-            <h4>Embed</h4>
-            <p>Each chunk gets two embeddings: a 768-dim dense vector for semantic meaning, and a sparse SPLADE vector for exact keyword matching — enabling hybrid search later.</p>
-          </div>
-          <div class="info-item" data-node="vectordb">
-            <h4>Vector DB</h4>
-            <p>Both vectors are stored in Qdrant, tagged with your client ID. Every future query is filtered by that tag, so your documents are never visible to another client.</p>
-          </div>
-          <div class="info-item" data-node="query">
-            <h4>Query</h4>
-            <p>A visitor asks a question through your embedded chat widget — this is where a real conversation with your chatbot begins.</p>
-          </div>
-          <div class="info-item" data-node="embed-query">
-            <h4>Embed</h4>
-            <p>The question is embedded the same way your documents were — dense and sparse — so it can be directly compared against what's stored in Vector DB.</p>
-          </div>
-          <div class="info-item" data-node="retrieve">
-            <h4>Retrieve</h4>
-            <p>Qdrant runs a hybrid search combining both vector types, using Reciprocal Rank Fusion to merge semantic and keyword results into one ranked list of candidate chunks.</p>
-          </div>
-          <div class="info-item" data-node="augment">
-            <h4>Augment</h4>
-            <p>The top-ranked chunks are combined with your original question into a single prompt, with instructions that keep the model from answering outside your documents.</p>
-          </div>
-          <div class="info-item" data-node="generate">
-            <h4>Generate</h4>
-            <p>The prompt is sent to Groq's Llama 3.3 70B model, which generates an answer grounded only in your content — with the source chunks it used.</p>
-          </div>
+    <!-- ===================== BIG RAG TICKER DIVIDER (Semantic Pulse) ===================== -->
+    <div class="rag-ticker-divider">
+      <div class="ticker-track">
+        
+        <!-- ================= GROUP 1 ================= -->
+        <div class="ticker-block hash">
+          <span class="block-label">INDEX</span>
+          <span class="block-value">#DOC_8F73B9A</span>
+        </div>
+        
+        <div class="ticker-block vector">
+          <span class="block-label">EMBEDDING</span>
+          <span class="block-value">[0.124, -0.841, 0.455, 0.912]</span>
+        </div>
+        
+        <!-- Glowing Match Block 1 -->
+        <div class="ticker-block chunk match-pulse" style="--pulse-delay: 2s;">
+          <div class="match-badge"><i data-lucide="zap"></i> SIMILARITY: 0.98</div>
+          <span class="block-value">"employees accrue 20 days of Paid Time Off..."</span>
+        </div>
+        
+        <div class="ticker-block vector">
+          <span class="block-label">EMBEDDING</span>
+          <span class="block-value">[-0.412, 0.881, 0.119, 0.053]</span>
+        </div>
+        
+        <div class="ticker-block hash">
+          <span class="block-label">SYS_STATUS</span>
+          <span class="block-value">AWAITING_QUERY</span>
+        </div>
+        
+        <!-- Glowing Match Block 2 -->
+        <div class="ticker-block chunk match-pulse" style="--pulse-delay: 6s;">
+          <div class="match-badge"><i data-lucide="zap"></i> SIMILARITY: 0.92</div>
+          <span class="block-value">"hardware requests are routed via IT portal..."</span>
+        </div>
+        
+        <div class="ticker-block vector">
+          <span class="block-label">EMBEDDING</span>
+          <span class="block-value">[0.771, 0.224, -0.551, 0.198]</span>
         </div>
 
-        <!-- RIGHT: vertical flowchart, top-down -->
-        <div class="pipeline-flow" id="pipeline-flow">
+        <!-- ================= GROUP 2 (Exact Duplicate for Seamless Loop) ================= -->
+        <div class="ticker-block hash">
+          <span class="block-label">INDEX</span>
+          <span class="block-value">#DOC_8F73B9A</span>
+        </div>
+        
+        <div class="ticker-block vector">
+          <span class="block-label">EMBEDDING</span>
+          <span class="block-value">[0.124, -0.841, 0.455, 0.912]</span>
+        </div>
+        
+        <div class="ticker-block chunk match-pulse" style="--pulse-delay: 2s;">
+          <div class="match-badge"><i data-lucide="zap"></i> SIMILARITY: 0.98</div>
+          <span class="block-value">"employees accrue 20 days of Paid Time Off..."</span>
+        </div>
+        
+        <div class="ticker-block vector">
+          <span class="block-label">EMBEDDING</span>
+          <span class="block-value">[-0.412, 0.881, 0.119, 0.053]</span>
+        </div>
+        
+        <div class="ticker-block hash">
+          <span class="block-label">SYS_STATUS</span>
+          <span class="block-value">AWAITING_QUERY</span>
+        </div>
+        
+        <div class="ticker-block chunk match-pulse" style="--pulse-delay: 6s;">
+          <div class="match-badge"><i data-lucide="zap"></i> SIMILARITY: 0.92</div>
+          <span class="block-value">"hardware requests are routed via IT portal..."</span>
+        </div>
+        
+        <div class="ticker-block vector">
+          <span class="block-label">EMBEDDING</span>
+          <span class="block-value">[0.771, 0.224, -0.551, 0.198]</span>
+        </div>
 
-          <div class="flow-card" data-node="document">
-            <div class="flow-card-header"><i data-lucide="file-text"></i><span>Document</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Fetched</div>
-              <div class="substep">Validated</div>
-              <div class="substep">Hashed</div>
+      </div>
+    </div>
+
+    <!-- ===================== SMALL DATA TRACK DIVIDER ===================== -->
+    <div class="data-track-divider">
+      <div class="track-line speed-1"></div>
+      <div class="track-line speed-2"></div>
+      <div class="track-line speed-3"></div>
+    </div>
+
+    <!-- ===================== INTERACTIVE RAG SIMULATION ===================== -->
+    <section class="pipeline-section" id="how-it-works">
+      
+      <div class="pipeline-header reveal">
+        <h2>How AthenaChat works</h2>
+        <p>A transparent, high-performance RAG pipeline.</p>
+      </div>
+
+      <!-- The outer wrapper provides the scroll height for GSAP to scrub through -->
+      <div class="pipeline-scroll-container">
+        
+        <!-- The inner layout that gets pinned to the screen -->
+        <div class="pipeline-layout">
+          
+          <!-- LEFT: The Scrolling Narrative -->
+          <div class="pipeline-narrative">
+            <div class="narrative-step" id="step-upload">
+              <h3>1. Ingestion</h3>
+              <p>Upload your knowledge base. We securely process your PDFs, docs, and text files instantly.</p>
+            </div>
+            
+            <div class="narrative-step" id="step-chunk">
+              <h3>2. Semantic Chunking</h3>
+              <p>Documents are split into overlapping blocks, ensuring no vital context is lost at the boundaries.</p>
+            </div>
+            
+            <div class="narrative-step" id="step-embed">
+              <h3>3. Embedding & Storage</h3>
+              <p>Chunks are converted into dense and sparse vectors, securely stored in an isolated Vector DB.</p>
+            </div>
+            
+            <div class="narrative-step" id="step-query">
+              <h3>4. Retrieval in Action</h3>
+              <p>Select a question below to see how AthenaChat retrieves the exact context and generates an answer.</p>
+              
+              <!-- Interactive Triggers -->
+              <div class="interactive-queries">
+                <button class="query-btn" data-target="pto">What is the PTO policy?</button>
+                <button class="query-btn" data-target="hardware">How do I request hardware?</button>
+                <button class="query-btn" data-target="hours">What are the core hours?</button>
+              </div>
             </div>
           </div>
-          <div class="flow-connector" data-next="chunking"><div class="flow-pulse"></div></div>
 
-          <div class="flow-card" data-node="chunking">
-            <div class="flow-card-header"><i data-lucide="scissors"></i><span>Chunking</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Split into chunks</div>
-              <div class="substep">Overlap applied</div>
-              <div class="substep">Ready to embed</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="embed-ingest"><div class="flow-pulse"></div></div>
+          <!-- RIGHT: The Visual Simulation Canvas -->
+          <div class="pipeline-visuals">
+            <div class="canvas-container">
+              
+              <!-- Phase 1 Assets: Ingestion & Storage -->
+              <div class="sim-ingestion-stage">
+                
+                <div class="sim-doc" id="sim-doc">
+                  <i data-lucide="file-text"></i>
+                  <span>employee_handbook.pdf</span>
+                </div>
+                
+                <div class="sim-chunks" id="sim-chunks">
+                  <div class="sim-chunk" id="chunk-1">Company overview and mission...</div>
+                  <div class="sim-chunk" id="chunk-2">Employees accrue 20 days PTO...</div>
+                  <div class="sim-chunk" id="chunk-3">Core hours are 10 AM to 3 PM...</div>
+                  <div class="sim-chunk" id="chunk-4">Hardware requests via IT portal...</div>
+                </div>
 
-          <div class="flow-card" data-node="embed-ingest">
-            <div class="flow-card-header"><i data-lucide="layers"></i><span>Embed</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Dense vector created</div>
-              <div class="substep">Sparse vector created</div>
-              <div class="substep">Pair stored together</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="vectordb"><div class="flow-pulse"></div></div>
+                <div class="sim-vectors" id="sim-vectors">
+                  <div class="sim-vector" id="vec-1">[0.12, -0.84, 0.45, 0.91]</div>
+                  <div class="sim-vector" id="vec-2">[0.77, 0.22, -0.55, 0.19]</div>
+                  <div class="sim-vector" id="vec-3">[-0.41, 0.88, 0.11, 0.05]</div>
+                  <div class="sim-vector" id="vec-4">[0.33, -0.19, 0.67, -0.82]</div>
+                </div>
 
-          <div class="flow-card" data-node="vectordb">
-            <div class="flow-card-header"><i data-lucide="database"></i><span>Vector DB</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Tagged with client ID</div>
-              <div class="substep">Indexed in Qdrant</div>
-              <div class="substep">Ready to search</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="query"><div class="flow-pulse"></div></div>
+                <div class="sim-database" id="sim-database">
+                  <div class="db-header">
+                    <i data-lucide="database"></i> Isolated Vector DB
+                  </div>
+                  <div class="db-grid">
+                    <div class="db-slot" id="slot-1"></div>
+                    <div class="db-slot" id="slot-2"></div>
+                    <div class="db-slot" id="slot-3"></div>
+                    <div class="db-slot" id="slot-4"></div>
+                  </div>
+                </div>
 
-          <div class="flow-card" data-node="query">
-            <div class="flow-card-header"><i data-lucide="message-circle"></i><span>Query</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Question received</div>
-              <div class="substep">Sent to embedder</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="embed-query"><div class="flow-pulse"></div></div>
+              </div>
 
-          <div class="flow-card" data-node="embed-query">
-            <div class="flow-card-header"><i data-lucide="layers"></i><span>Embed</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Dense + sparse embedded</div>
-              <div class="substep">Ready to search Vector DB</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="retrieve"><div class="flow-pulse"></div></div>
+              <!-- Phase 2 Assets: Chat & Retrieval -->
+              <div class="sim-retrieval-stage">
+                
+                <div class="sim-chat-widget">
+                  <div class="chat-header">
+                    <i data-lucide="bot"></i> AthenaChat
+                  </div>
+                  <div class="chat-body" id="sim-chat-body">
+                    <!-- JavaScript will inject chat bubbles here during simulation -->
+                  </div>
+                  <div class="chat-input-mock">
+                    <span>Type a message...</span>
+                    <i data-lucide="send"></i>
+                  </div>
+                </div>
 
-          <div class="flow-card" data-node="retrieve">
-            <div class="flow-card-header"><i data-lucide="search"></i><span>Retrieve</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Hybrid search run</div>
-              <div class="substep">Results fused (RRF)</div>
-              <div class="substep">Top chunks selected</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="augment"><div class="flow-pulse"></div></div>
+                <!-- Floating elements that animate across the canvas during retrieval -->
+                <div class="sim-floating-element" id="sim-query-vector"></div>
+                <div class="sim-floating-element" id="sim-retrieved-context"></div>
 
-          <div class="flow-card" data-node="augment">
-            <div class="flow-card-header"><i data-lucide="git-merge"></i><span>Augment</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Chunks + question combined</div>
-              <div class="substep">Prompt constructed</div>
-            </div>
-          </div>
-          <div class="flow-connector" data-next="generate"><div class="flow-pulse"></div></div>
+              </div>
 
-          <div class="flow-card" data-node="generate">
-            <div class="flow-card-header"><i data-lucide="sparkles"></i><span>Generate</span></div>
-            <div class="flow-substeps">
-              <div class="substep">Sent to Llama 3.3 70B</div>
-              <div class="substep">Answer generated</div>
-              <div class="substep">Sources cited</div>
             </div>
           </div>
 
         </div>
       </div>
     </section>
-
-    <div class="section-divider" aria-hidden="true">
-      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
-        <path class="divider-fill-bg" d="M0,42 C400,0 1040,74 1440,32 L1440,74 L0,74 Z"/>
-      </svg>
-    </div>
-
-    <!-- ===================== FEATURES ===================== -->
-    <section class="features" id="features">
-      <div class="container">
-        <div class="section-heading reveal">
-          <h2>Built for real deployments</h2>
-        </div>
-        <div class="features-grid reveal-stagger">
-          <div class="card feature-card">
-            <i data-lucide="shield-check"></i>
-            <h3>Fully isolated per client</h3>
-            <p>Your documents and your customers' conversations never mix with anyone else's data.</p>
-          </div>
-          <div class="card feature-card">
-            <i data-lucide="search"></i>
-            <h3>Hybrid search</h3>
-            <p>Combines semantic and keyword matching, so both vague questions and exact terms get the right answer.</p>
-          </div>
-          <div class="card feature-card">
-            <i data-lucide="zap"></i>
-            <h3>Live in minutes</h3>
-            <p>No infrastructure to manage. Upload, embed the script tag, and your chatbot is answering questions.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="section-divider" aria-hidden="true">
-      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
-        <path class="divider-fill-gold" d="M0,32 C360,74 1080,0 1440,42 L1440,74 L0,74 Z"/>
-      </svg>
-    </div>
-
-    <!-- ===================== CTA BAND ===================== -->
-    <section class="cta-band reveal">
-      <h2>Ready to give your website a brain?</h2>
-      <a href="register.html" class="btn btn-primary">Get started free</a>
-    </section>
-
-    <div class="section-divider" aria-hidden="true">
-      <svg viewBox="0 0 1440 74" preserveAspectRatio="none">
-        <path class="divider-fill-bg" d="M0,42 C400,0 1040,74 1440,32 L1440,74 L0,74 Z"/>
-      </svg>
-    </div>
-
   </main>
 
   <!-- ===================== FOOTER ===================== -->
