@@ -25,7 +25,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
-  transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out;
+  transition: transform 0.7s cubic-bezier(0.77, 0, 0.17, 1), opacity 0.7s cubic-bezier(0.77, 0, 0.17, 1);
 }
 
 .form-panel-signin {
@@ -58,7 +58,7 @@
   overflow: hidden;
   color: var(--color-surface);
   background: linear-gradient(160deg, #241804 0%, #C8860A 55%, #F5C842 100%);
-  transition: transform 0.6s ease-in-out;
+  transition: transform 0.7s cubic-bezier(0.77, 0, 0.17, 1);
   z-index: 10;
 }
 
@@ -78,7 +78,7 @@
   width: 200%;
   height: 100%;
   transform: translateX(0);
-  transition: transform 0.6s ease-in-out;
+  transition: transform 0.7s cubic-bezier(0.77, 0, 0.17, 1);
 }
 
 .auth-flip-container.right-active .overlay {
@@ -96,7 +96,7 @@
   justify-content: center;
   text-align: center;
   padding: var(--space-7);
-  transition: transform 0.6s ease-in-out;
+  transition: transform 0.7s cubic-bezier(0.77, 0, 0.17, 1);
 }
 
 .overlay-panel-left {
@@ -290,6 +290,18 @@
   color: var(--color-accent-primary);
 }
 
+/* ---- Form Loading State ---- */
+.form-group input:disabled {
+  opacity: 0.6;
+  background-color: var(--color-bg);
+  cursor: not-allowed;
+}
+
+.input-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Error state — input border tints red, message beneath becomes visible */
 .form-group.has-error input {
   border-color: var(--color-status-error);
@@ -385,6 +397,22 @@
   display: block;
 }
 
+/* ---- Progressive Disclosure for Password Feedback ---- */
+.password-feedback-container {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  /* Fast fade in, highly controlled structural slide down */
+  transition: max-height 0.6s cubic-bezier(0.19, 1, 0.22, 1), 
+              opacity 0.4s ease-in-out;
+}
+
+.password-feedback-container.is-visible {
+  /* Set max-height high enough to clear the content */
+  max-height: 250px; 
+  opacity: 1;
+}
+
 /* ---- Live password requirements ---- */
 .password-requirements {
   list-style: none;
@@ -450,4 +478,14 @@
   color: var(--color-text-secondary);
   min-width: 46px;
   text-align: right;
+}
+
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: error-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
