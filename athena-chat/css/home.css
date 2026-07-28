@@ -1412,3 +1412,147 @@
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   BRAND MARQUEE BANNER (Giant Outline Text)
+   ========================================================================== */
+.brand-marquee-section {
+  width: 100%;
+  background-color: #0a0a0a; /* Matches your dark CTA section */
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 60px 0;
+  overflow: hidden;
+  display: flex;
+  white-space: nowrap;
+}
+
+.brand-marquee-track {
+  display: flex;
+  gap: 80px;
+  align-items: center;
+  animation: brand-scroll 25s linear infinite;
+}
+
+.brand-marquee-item {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  font-size: 7rem; /* Massive scale */
+  font-weight: 800;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  
+  /* Creates the hollow outline text effect */
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.15); 
+  transition: -webkit-text-stroke 0.3s ease, color 0.3s ease;
+}
+
+.brand-marquee-item:hover {
+  color: rgba(200, 134, 10, 0.2); /* Faint gold fill on hover */
+  -webkit-text-stroke: 1.5px var(--color-accent-primary);
+}
+
+.brand-marquee-item i {
+  width: 48px;
+  height: 48px;
+  color: var(--color-accent-primary);
+  opacity: 0.6;
+}
+
+@keyframes brand-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+
+/* ==========================================================================
+   MINIMAL SITE FOOTER
+   ========================================================================== */
+.site-footer {
+  width: 100%;
+  background-color: #0a0a0a; /* Matches the dark theme extension */
+  padding: 40px 0;
+  color: #888888;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.footer-brand i {
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent-primary);
+}
+
+.footer-left p {
+  font-size: 0.85rem;
+  color: #666666;
+}
+
+/* Extra Footer CTA Button */
+.footer-cta-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.footer-cta-btn i {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s ease;
+}
+
+.footer-cta-btn:hover {
+  background-color: rgba(200, 134, 10, 0.1);
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+.footer-cta-btn:hover i {
+  transform: translateY(-3px); /* Arrow nudges up */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .brand-marquee-item {
+    font-size: 4rem; /* Scales down for mobile screens */
+  }
+  .footer-container {
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
+  }
+  .footer-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
