@@ -13,15 +13,28 @@
 /* ==========================================================================
    HEADER (Public Variant)
    ========================================================================== */
+/* ---- Base State (At the top of the page) ---- */
 .site-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-8);
-  background-color: transparent;
-  border-bottom: none;
-  position: relative;
-  z-index: 100;
+  background-color: transparent; 
+  border-bottom: 1px solid transparent; 
+  position: sticky; 
+  top: 0;
+  z-index: 999; /* Boosted z-index so it sits above GSAP elements */
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); /* Smooth morph */
+}
+
+/* ---- Scrolled State (Triggered by JS) ---- */
+.site-header.scrolled {
+  padding: var(--space-3) var(--space-8); /* Shrinks slightly vertically */
+  background-color: rgba(253, 252, 248, 0.85); /* Matches your off-white hero */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Subtle dividing line */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02); /* Barely-there shadow */
 }
 
 .site-header .nav-links {

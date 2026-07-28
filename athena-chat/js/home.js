@@ -27,7 +27,6 @@ document.addEventListener("DOMContentLoaded", initMainApp);
 
 function initMainApp() {
     Icons.init();
-    PipelineFlow.init();
     ScrollReveal.init();
 }
 
@@ -255,3 +254,20 @@ const ScrollReveal = {
     });
   }
 };
+
+/*
+========================================
+STICKY NAVBAR SCROLL STATE
+========================================
+*/
+const header = document.querySelector('.site-header');
+
+window.addEventListener('scroll', () => {
+  // If the user scrolls down more than 20 pixels, apply the frosted glass
+  if (window.scrollY > 20) {
+    header.classList.add('scrolled');
+  } else {
+    // If they go back to the top, make it transparent again
+    header.classList.remove('scrolled');
+  }
+});
