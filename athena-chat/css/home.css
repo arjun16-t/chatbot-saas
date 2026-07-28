@@ -1257,3 +1257,158 @@
   .bento-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: span 1; }
 }
+
+/* ==========================================================================
+   CALL TO ACTION (Full Viewport Dark Anchor)
+   ========================================================================== */
+.cta-section {
+  width: 100%;
+  background-color: var(--color-bg);
+  padding: 0;
+  margin-top: var(--space-10);
+}
+
+.cta-container {
+  position: relative;
+  width: 100%;
+  background-color: #0a0a0a; /* Deep ink black */
+  border-radius: 0; /* Removes rounded corners for full viewport edge-to-edge feel */
+  padding: 100px 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* --- Ambient Gold Glow --- */
+.cta-glow {
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(200, 134, 10, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* --- Decorative Grid --- */
+.cta-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- Content Styling --- */
+.cta-content {
+  position: relative;
+  z-index: 10;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cta-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent-primary);
+  background-color: rgba(200, 134, 10, 0.1);
+  border: 1px solid rgba(200, 134, 10, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: var(--space-5);
+}
+
+.cta-heading {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--space-7); /* Generous spacing down to buttons */
+}
+
+/* --- CTA Buttons --- */
+.cta-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cta-btn i {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+/* Primary Button */
+.cta-btn.primary {
+  background-color: var(--color-accent-primary);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 8px 24px rgba(200, 134, 10, 0.25);
+}
+
+.cta-btn.primary:hover {
+  background-color: #d8930b;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(200, 134, 10, 0.35);
+}
+
+.cta-btn.primary:hover i {
+  transform: translateX(4px);
+}
+
+/* Secondary Button */
+.cta-btn.secondary {
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cta-btn.secondary:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .cta-container {
+    padding: 80px 20px;
+  }
+  .cta-heading {
+    font-size: 2.75rem;
+  }
+  .cta-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .cta-btn {
+    width: 100%;
+  }
+}
