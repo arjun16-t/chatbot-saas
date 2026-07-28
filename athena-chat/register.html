@@ -73,9 +73,18 @@
                 <i data-lucide="eye-off" class="icon-hide"></i>
               </button>
             </div>
+            <div class="password-strength">
+              <div class="strength-track">
+                <div class="strength-fill" id="strength-fill"></div>
+              </div>
+              <span class="strength-label" id="strength-label"></span>
+            </div>
             <ul class="password-requirements" id="password-requirements">
               <li class="requirement" id="req-length">At least 8 characters</li>
-              <li class="requirement" id="req-notnumeric">Not entirely numbers</li>
+              <li class="requirement" id="req-upper">One uppercase letter</li>
+              <li class="requirement" id="req-lower">One lowercase letter</li>
+              <li class="requirement" id="req-number">One number</li>
+              <li class="requirement" id="req-symbol">One symbol (!@#$...)</li>
             </ul>
           </div>
 

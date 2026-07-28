@@ -85,23 +85,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('register-submit');
     const toggleBtn = document.getElementById('toggle-reg-password');
     const reqLength = document.getElementById('req-length');
-    const reqNotNumeric = document.getElementById('req-notnumeric');
+    const reqUpper = document.getElementById('req-upper');
+    const reqLower = document.getElementById('req-lower');
+    const reqNumber = document.getElementById('req-number');
+    const reqSymbol = document.getElementById('req-symbol');
+    const strengthFill = document.getElementById('strength-fill');
+    const strengthLabel = document.getElementById('strength-label');
+
+    const STRENGTH_LEVELS = [
+      { label: '', color: 'var(--color-border)' },
+      { label: 'Weak', color: 'var(--color-status-error)' },
+      { label: 'Weak', color: 'var(--color-status-error)' },
+      { label: 'Fair', color: '#D9A441' },
+      { label: 'Good', color: 'var(--color-accent-primary)' },
+      { label: 'Strong', color: 'var(--color-status-success)' },
+    ];
 
     /**
-     * Checks the password against both requirements and updates the
-     * checklist live — this replaces a single generic error message
-     * with feedback the person can act on while they're still typing,
-     * rather than discovering what's wrong only after they submit.
+     * Checks the password against all 5 criteria, updates the live
+     * checklist and strength meter, and returns whether every
+     * requirement is satisfied.
      */
     function checkPasswordRequirements() {
       const value = passwordInput.value;
-      const lengthOk = value.length >= 8;
-      const notNumericOk = value.length > 0 && !/^\d+$/.test(value);
+      const checks = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+        symbol: /[^A-Za-z0-9]/.test(value),
+      };
 
-      reqLength.classList.toggle('is-met', lengthOk);
-      reqNotNumeric.classList.toggle('is-met', notNumericOk);
+      reqLength.classList.toggle('is-met', checks.length);
+      reqUpper.classList.toggle('is-met', checks.upper);
+      reqLower.classList.toggle('is-met', checks.lower);
+      reqNumber.classList.toggle('is-met', checks.number);
+      reqSymbol.classList.toggle('is-met', checks.symbol);
 
-      return lengthOk && notNumericOk;
+      const score = Object.values(checks).filter(Boolean).length;
+      const level = STRENGTH_LEVELS[value.length === 0 ? 0 : score];
+      strengthFill.style.width = `${(score / 5) * 100}%`;
+      strengthFill.style.backgroundColor = level.color;
+      strengthLabel.textContent = level.label;
+
+      return Object.values(checks).every(Boolean);
     }
 
     // Reveal/hide password — removes the need for a second "confirm
