@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — AthenaChat</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="dashboard-sidebar">
+      <div class="sidebar-top">
+        <div class="site-header sidebar-brand">
+          <div class="logo-group">
+            <img src="assets/images/AthenaBot.png" alt="AthenaChat logo">
+            <span class="brand-name">AthenaChat</span>
+          </div>
+        </div>
+
+        <div class="sidebar-search-container">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" placeholder="Search here" class="sidebar-search-input">
+        </div>
+
+        <div class="sidebar-scroll-area">
+          <nav class="nav-grid">
+            <a href="#" class="nav-tile is-active">
+              <i data-lucide="layout-dashboard"></i>
+              <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-tile">
+              <i data-lucide="folder-open"></i>
+              <span>Projects</span>
+            </a>
+            <a href="#" class="nav-tile">
+              <i data-lucide="file-text"></i>
+              <span>Documents</span>
+            </a>
+            <a href="#" class="nav-tile">
+              <i data-lucide="bar-chart-2"></i>
+              <span>Metrics</span>
+            </a>
+          </nav>
+
+          <div class="sidebar-collapsible" id="quick-links-group">
+            <button class="collapsible-trigger" aria-expanded="true">
+              <i data-lucide="chevron-down" class="chevron"></i>
+              <span>Quick Links</span>
+            </button>
+            <ul class="collapsible-content">
+              <!-- Colored dots removed -->
+              <li><a href="#" class="pill-link">Review Chatbot</a></li>
+              <li><a href="#" class="pill-link">Analyse Usage</a></li>
+              <li><a href="#" class="pill-link">Manage API Keys</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="profile-dropdown-container">
+          <button class="profile-trigger" id="profile-menu-btn" aria-expanded="false">
+            <div class="user-avatar">
+              <img src="https://ui-avatars.com/api/?name=Arjun&background=111&color=fff" alt="Arjun">
+            </div>
+            <div class="user-details">
+              <span class="user-email">Arjun</span>
+              <span class="user-role">Administrator</span>
+            </div>
+            <i data-lucide="chevron-down" class="dropdown-chevron"></i>
+          </button>
+          
+          <div class="profile-menu" id="profile-menu">
+            <a href="#"><i data-lucide="user"></i> My Profile</a>
+            <a href="#"><i data-lucide="settings"></i> Account Settings</a>
+            <a href="#"><i data-lucide="credit-card"></i> Billing</a>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-icon-only logout-btn" aria-label="Log out">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN CONTENT -->
+    <main class="dashboard-main" id="main-scroll-area">
+      
+      <!-- STICKY BENTO HEADER -->
+      <div class="header-bento-wrapper">
+        <header class="main-header-sticky bento-box" id="main-header">
+          
+          <!-- Persistent Top Bar -->
+          <div class="header-top-bar">
+            <div class="header-titles">
+              <p class="breadcrumbs">Home / Dashboard / <strong>Aureon EV Concept</strong></p>
+              <h1 id="greeting-text">Good Evening, Arjun</h1>
+              <p class="date-display" id="current-date"></p>
+            </div>
+            
+            <!-- Appears only on scroll -->
+            <div class="scrolled-actions" id="scrolled-actions">
+              <div class="mini-gauge-container">
+                <div class="mini-gauge-track">
+                  <div class="mini-gauge-fill" style="width: 84%;"></div>
+                </div>
+                <span class="mini-gauge-text">84.2k / 100k calls</span>
+              </div>
+              <button class="btn btn-primary btn-sm">
+                <i data-lucide="upload-cloud"></i>
+                <span>Upload</span>
+              </button>
+            </div>
+
+            <div class="header-actions">
+              <button class="btn btn-secondary btn-icon-only">
+                <i data-lucide="calendar"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon-only">
+                <i data-lucide="bell"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Stats Area -->
+          <div class="header-collapsible-area">
+            
+            <div class="minimal-stats-group">
+              <div class="minimal-stat-item">
+                <div class="stat-top">
+                  <div class="stat-icon-tiny"><i data-lucide="folder"></i></div>
+                  <span class="stat-huge-number">12</span>
+                </div>
+                <span class="stat-label">Active Projects</span>
+              </div>
+              
+              <div class="minimal-stat-item">
+                <div class="stat-top">
+                  <div class="stat-icon-tiny"><i data-lucide="file-text"></i></div>
+                  <span class="stat-huge-number">148</span>
+                </div>
+                <span class="stat-label">Indexed Documents</span>
+              </div>
+            </div>
+
+            <!-- Gauge Card moved left -->
+            <div class="header-gauge-card">
+              <div class="gauge-container">
+                <svg viewBox="0 0 100 100" class="gauge-svg">
+                  <!-- Background Track (270 degree arc) -->
+                  <path d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3" fill="none" stroke="var(--color-border)" stroke-width="10" stroke-linecap="round"/>
+                  <!-- 84% filled (Total length is 188.5. Offset = 188.5 - (188.5 * 0.84) = 30.2) -->
+                  <path d="M 21.7 78.3 A 40 40 0 1 1 78.3 78.3" fill="none" stroke="var(--color-accent-primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="30.2"/>
+                </svg>
+                <div class="gauge-text">
+                  <strong>84%</strong>
+                  <span>Used</span>
+                </div>
+              </div>
+              
+              <div class="gauge-info">
+                <span class="gauge-title">API Usage</span>
+                <p class="gauge-details"><strong>84.2k</strong> / 100k calls</p>
+                <div class="gauge-actions">
+                  <button class="btn btn-secondary btn-sm">Analyse</button>
+                  <button class="btn btn-primary btn-sm">Buy More</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Spacer to push everything left and fill the flexbox -->
+            <div class="header-spacer"></div>
+
+          </div>
+        </header>
+      </div>
+
+      <!-- MAIN DASHBOARD CONTENT -->
+      <div class="dashboard-content">
+        
+        <!-- Upload Workspace Bento -->
+        <section class="upload-section bento-box">
+          <div class="upload-card">
+            <div class="upload-content">
+              <div class="upload-icon-wrapper">
+                <i data-lucide="upload-cloud"></i>
+              </div>
+              <div class="upload-text">
+                <h3>Upload a new document</h3>
+                <p class="form-hint">Drag and drop your PDF, DOCX, or TXT files here, or click to browse.</p>
+              </div>
+            </div>
+            <div class="upload-actions">
+              <button class="btn btn-primary">
+                <i data-lucide="plus"></i>
+                <span>Select File</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Document Ledger Bento -->
+        <section class="ledger-section bento-box">
+          <div class="section-header">
+            <h3>Document Ledger</h3>
+            <div class="search-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" placeholder="Search documents..." class="search-input">
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="table" id="document-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="filename">
+                    <div class="th-content">Filename <i data-lucide="arrow-down" class="sort-icon"></i></div>
+                  </th>
+                  <th class="sortable" data-sort="status">
+                    <div class="th-content">Status <i data-lucide="arrow-down" class="sort-icon"></i></div>
+                  </th>
+                  <th class="sortable" data-sort="date">
+                    <div class="th-content">Uploaded Date <i data-lucide="arrow-down" class="sort-icon"></i></div>
+                  </th>
+                  <th class="align-right">Action</th>
+                </tr>
+              </thead>
+                            <tbody>
+                <tr>
+                  <td data-value="employee_handbook_2026.pdf">
+                    <div class="file-name-cell">
+                      <i data-lucide="file-text" class="file-icon"></i>
+                      <div>
+                        <strong>employee_handbook_2026.pdf</strong>
+                        <div class="mono">#doc_8f73b9a</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-value="Trained">
+                    <span class="badge">
+                      <span class="badge-dot badge-success"></span>
+                      Trained
+                    </span>
+                  </td>
+                  <td class="date-cell" data-value="2026-07-28">28 Jul 2026</td>
+                  <td class="align-right">
+                    <button class="btn btn-danger btn-icon-only" aria-label="Delete document">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td data-value="q3_financial_report.docx">
+                    <div class="file-name-cell">
+                      <i data-lucide="file" class="file-icon"></i>
+                      <div>
+                        <strong>q3_financial_report.docx</strong>
+                        <div class="mono">#doc_2c41e8d</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-value="Processing">
+                    <span class="badge">
+                      <span class="badge-dot badge-processing"></span>
+                      Processing
+                    </span>
+                  </td>
+                  <td class="date-cell" data-value="2026-07-28">28 Jul 2026</td>
+                  <td class="align-right">
+                    <button class="btn btn-danger btn-icon-only" disabled aria-label="Delete document">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td data-value="corrupted_data_export.csv">
+                    <div class="file-name-cell">
+                      <i data-lucide="file-warning" class="file-icon"></i>
+                      <div>
+                        <strong>corrupted_data_export.csv</strong>
+                        <div class="mono">#doc_9b11f4c</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-value="Failed">
+                    <span class="badge">
+                      <span class="badge-dot badge-error"></span>
+                      Failed
+                    </span>
+                  </td>
+                  <td class="date-cell" data-value="2026-07-27">27 Jul 2026</td>
+                  <td class="align-right">
+                    <button class="btn btn-danger btn-icon-only" aria-label="Delete document">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+                <!-- Row 4: Trained -->
+                <tr>
+                  <td data-value="marketing_guidelines_v2.pdf">
+                    <div class="file-name-cell">
+                      <i data-lucide="file-text" class="file-icon"></i>
+                      <div>
+                        <strong>marketing_guidelines_v2.pdf</strong>
+                        <div class="mono">#doc_7a19c4d</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-value="Trained">
+                    <span class="badge">
+                      <span class="badge-dot badge-success"></span>
+                      Trained
+                    </span>
+                  </td>
+                  <td class="date-cell" data-value="2026-07-26">26 Jul 2026</td>
+                  <td class="align-right">
+                    <button class="btn btn-danger btn-icon-only" aria-label="Delete document">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Row 5: Processing -->
+                <tr>
+                  <td data-value="meeting_transcripts_q2.txt">
+                    <div class="file-name-cell">
+                      <i data-lucide="file-type-2" class="file-icon"></i>
+                      <div>
+                        <strong>meeting_transcripts_q2.txt</strong>
+                        <div class="mono">#doc_4e88a1b</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-value="Processing">
+                    <span class="badge">
+                      <span class="badge-dot badge-processing"></span>
+                      Processing
+                    </span>
+                  </td>
+                  <td class="date-cell" data-value="2026-07-28">28 Jul 2026</td>
+                  <td class="align-right">
+                    <button class="btn btn-danger btn-icon-only" disabled aria-label="Delete document">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Row 6: Failed -->
+                <tr>
+                  <td data-value="legacy_contracts_archive.docx">
+                    <div class="file-name-cell">
+                      <i data-lucide="file" class="file-icon"></i>
+                      <div>
+                        <strong>legacy_contracts_archive.docx</strong>
+                        <div class="mono">#doc_1f33b9c</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td data-value="Failed">
+                    <span class="badge">
+                      <span class="badge-dot badge-error"></span>
+                      Failed
+                    </span>
+                  </td>
+                  <td class="date-cell" data-value="2026-07-25">25 Jul 2026</td>
+                  <td class="align-right">
+                    <button class="btn btn-danger btn-icon-only" aria-label="Delete document">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
