@@ -1019,3 +1019,241 @@
     display: none; /* Hides floating cards on smaller viewports to protect typography */
   }
 }
+
+/* ==========================================================================
+   CAPABILITIES BENTO GRID (Elevated Surface & Micro-Interactions)
+   ========================================================================== */
+.bento-section {
+  padding: var(--space-10) var(--space-6);
+  background-color: var(--color-bg); /* Ensures the off-white contrast against cards */
+  position: relative;
+}
+
+.bento-header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto var(--space-8);
+}
+
+.bento-header h2 {
+  font-size: 2.5rem;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+  letter-spacing: -0.02em;
+}
+
+.bento-header p {
+  font-size: 1.125rem;
+  color: var(--color-text-secondary);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  auto-rows: minmax(340px, auto);
+}
+
+.span-2 { grid-column: span 2; }
+
+/* ---- Elevated Card Styling ---- */
+.bento-card {
+  background: #ffffff; /* Pure white for maximum contrast */
+  border-radius: 24px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  
+  /* The secret to premium borders: No actual border. 
+     Inset shadow defines the edge, outer shadow provides depth. */
+  box-shadow: 
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04), 
+    0 10px 30px -10px rgba(0, 0, 0, 0.03);
+    
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+}
+
+/* Subtle volumetric lighting */
+.bento-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at top right, rgba(200, 134, 10, 0.03), transparent 60%);
+  pointer-events: none;
+}
+
+.bento-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 
+    inset 0 0 0 1px rgba(200, 134, 10, 0.15), /* Subtle gold rim on hover */
+    0 20px 40px -10px rgba(0, 0, 0, 0.08),
+    0 0 20px rgba(200, 134, 10, 0.04);
+}
+
+/* Content Typography */
+.bento-content {
+  z-index: 10;
+  max-width: 90%;
+}
+
+.bento-icon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+  transition: transform 0.4s ease, border-color 0.4s ease;
+}
+.bento-card:hover .bento-icon {
+  transform: scale(1.05);
+  border-color: rgba(200, 134, 10, 0.3);
+}
+
+.bento-icon i {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent-primary);
+}
+
+.bento-card h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.bento-card p {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   MICRO-INTERACTIONS & VISUALS
+   ========================================================================== */
+.bento-visual {
+  margin-top: var(--space-5);
+  display: flex;
+  z-index: 10;
+}
+
+/* 1. Multi-Tenancy (Cascading Slide) */
+.visual-tenancy {
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.tenant-layer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;
+}
+.tenant-layer i { width: 14px; height: 14px; }
+.tenant-layer.client { background-color: var(--color-bg); color: var(--color-text-primary); border: 1px solid var(--color-border); }
+.tenant-layer.project { width: 85%; align-self: flex-end; background-color: rgba(200, 134, 10, 0.05); color: var(--color-text-secondary); border: 1px dashed rgba(200, 134, 10, 0.2); }
+
+/* Interaction */
+.bento-card:hover .tenant-layer.p-a { transform: translateX(-10px); background-color: rgba(200, 134, 10, 0.1); color: var(--color-accent-primary); }
+.bento-card:hover .tenant-layer.p-b { transform: translateX(-20px); background-color: rgba(200, 134, 10, 0.1); color: var(--color-accent-primary); transition-delay: 0.05s; }
+
+/* 2. Latency (Pulsing Dot) */
+.visual-latency {
+  align-items: center;
+  gap: 16px;
+}
+.ping-dot {
+  width: 12px;
+  height: 12px;
+  background-color: var(--color-status-success, #2ecc71);
+  border-radius: 50%;
+  position: relative;
+}
+.ping-dot::after {
+  content: '';
+  position: absolute;
+  top: -4px; left: -4px; right: -4px; bottom: -4px;
+  border: 1px solid var(--color-status-success, #2ecc71);
+  border-radius: 50%;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.latency-stat { font-size: 3.5rem; font-weight: 700; color: var(--color-text-primary); letter-spacing: -0.03em; line-height: 1; }
+.latency-stat .unit { font-size: 1.25rem; color: var(--color-text-secondary); margin-left: 4px; font-weight: 500; }
+@keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+
+/* 3. Hybrid Search (Scanning Lines) */
+.visual-hybrid {
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.search-track {
+  height: 36px;
+  border-radius: 6px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+.search-track span { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-secondary); position: relative; z-index: 2; }
+.search-track.sparse { background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px); }
+.scanner {
+  position: absolute;
+  top: 0; left: -50%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(200, 134, 10, 0.2), transparent);
+  transition: left 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Interaction */
+.bento-card:hover .scanner { left: 120%; }
+.bento-card:hover .scanner.delay { transition-delay: 0.15s; }
+
+/* 4. Analytics (Rising Bars) */
+.visual-analytics {
+  align-items: flex-end;
+  gap: 24px;
+  height: 100px;
+  padding-bottom: 8px;
+}
+.chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.chart-col span { font-family: var(--font-mono); font-size: 10px; color: var(--color-text-secondary); }
+.bar {
+  width: 32px;
+  height: 10%; /* Starting height */
+  border-radius: 4px 4px 0 0;
+  transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bar.hit { background-color: var(--color-accent-primary); }
+.bar.miss { background-color: var(--color-border); }
+.bar.gap { background-color: var(--color-text-secondary); }
+
+/* Interaction */
+.bento-card:hover .bar { height: var(--target-height); }
+
+@media (max-width: 900px) {
+  .bento-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+}

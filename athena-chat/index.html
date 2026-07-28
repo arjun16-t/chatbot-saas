@@ -15,7 +15,6 @@
 <body>
 
   <!-- ===================== HEADER ===================== -->
-  <!-- ===================== HEADER ===================== -->
   <header class="site-header">
     <div class="logo-group">
       <img src="assets/images/AthenaBot.png" alt="AthenaChat logo">
@@ -276,6 +275,101 @@
           </div>
 
         </div>
+      </div>
+    </section>
+
+    <!-- ===================== SMALL DATA TRACK DIVIDER ===================== -->
+    <div class="data-track-divider">
+      <div class="track-line speed-1"></div>
+      <div class="track-line speed-2"></div>
+      <div class="track-line speed-3"></div>
+    </div>
+
+    <!-- ===================== CAPABILITIES BENTO GRID ===================== -->
+    <section class="bento-section" id="features">
+      
+      <div class="bento-header">
+        <h2>Enterprise-grade infrastructure.</h2>
+        <p>Built for scale, speed, and absolute precision.</p>
+      </div>
+
+      <div class="bento-grid">
+        
+        <!-- Card 1: Multi-Tenancy (Cascading Hover) -->
+        <div class="bento-card span-2 group">
+          <div class="bento-content">
+            <div class="bento-icon"><i data-lucide="shield"></i></div>
+            <h3>Multi-Layered Tenancy</h3>
+            <p>Absolute data isolation. Manage context securely across overarching client accounts and isolated, project-specific boundaries without data bleed.</p>
+          </div>
+          <div class="bento-visual visual-tenancy">
+            <div class="tenant-layer client">
+              <i data-lucide="briefcase"></i> Client Organization
+            </div>
+            <div class="tenant-layer project p-a">
+              <i data-lucide="folder"></i> Alpha Environment
+            </div>
+            <div class="tenant-layer project p-b">
+              <i data-lucide="folder-lock"></i> Beta Environment (Isolated)
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Low Latency (Pulse Hover) -->
+        <div class="bento-card group">
+          <div class="bento-content">
+            <div class="bento-icon"><i data-lucide="zap"></i></div>
+            <h3>Ultra-Low Latency</h3>
+            <p>Optimized retrieval pipelines and high-performance vector operations delivering responses instantly.</p>
+          </div>
+          <div class="bento-visual visual-latency">
+            <div class="ping-dot"></div>
+            <span class="latency-stat">124<span class="unit">ms</span></span>
+          </div>
+        </div>
+
+        <!-- Card 3: Hybrid Search (Scan Hover) -->
+        <div class="bento-card group">
+          <div class="bento-content">
+            <div class="bento-icon"><i data-lucide="cpu"></i></div>
+            <h3>Hybrid Search</h3>
+            <p>We combine dense vectors for deep semantic meaning and sparse vectors for exact keyword precision.</p>
+          </div>
+          <div class="bento-visual visual-hybrid">
+            <div class="search-track dense">
+              <div class="scanner"></div>
+              <span>DENSE (Semantic)</span>
+            </div>
+            <div class="search-track sparse">
+              <div class="scanner delay"></div>
+              <span>SPARSE (Keyword)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Analytics (Bar Chart Hover) -->
+        <div class="bento-card span-2 group">
+          <div class="bento-content">
+            <div class="bento-icon"><i data-lucide="bar-chart-2"></i></div>
+            <h3>Advanced Analytics</h3>
+            <p>Monitor hit rates, track overall accuracy, and instantly identify unanswered queries to patch documentation gaps.</p>
+          </div>
+          <div class="bento-visual visual-analytics">
+            <div class="chart-col">
+              <div class="bar hit" style="--target-height: 98%;"></div>
+              <span>Hits</span>
+            </div>
+            <div class="chart-col">
+              <div class="bar miss" style="--target-height: 15%;"></div>
+              <span>Misses</span>
+            </div>
+            <div class="chart-col">
+              <div class="bar gap" style="--target-height: 4%;"></div>
+              <span>Gaps</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>
