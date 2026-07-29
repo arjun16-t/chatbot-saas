@@ -91,6 +91,11 @@ def get_or_create_collection(client: QdrantClient) -> CollectionInfo:
             )
             client.create_payload_index(
                 collection_name=QDRANT_COLLECTION_NAME,
+                field_name="project_id",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
+            client.create_payload_index(
+                collection_name=QDRANT_COLLECTION_NAME,
                 field_name="doc_id",
                 field_schema=PayloadSchemaType.KEYWORD
             )
@@ -158,6 +163,7 @@ def add_points(
     chunks: list[str],
     doc_id: str,
     client_id: str,
+    project_id: str,
     page_metadata: Optional[list[dict]] = None
 ) -> int:
     """
@@ -177,6 +183,7 @@ def add_points(
         chunks (list[str]): List of text chunks from chunk_text().
         doc_id (str): Unique identifier for the source document.
         client_id (str): Unique identifier for the client/tenant.
+        project_id (str): Unique identifier for the client's project.
         page_metadata (Optional[list[dict]]): Page boundary info from
             extract_text(). Used to approximate page number per chunk.
             Pass None for non-PDF files.
@@ -207,6 +214,7 @@ def add_points(
                         "chunk_text": chunk,
                         "doc_id": doc_id,
                         "client_id": client_id,
+                        "project_id": project_id,
                         "chunk_index": i,
                         "page": _get_page_for_chunk(i, page_metadata)
                     }
@@ -259,7 +267,8 @@ def remove_point(client: QdrantClient, point_id: str) -> None:
 def remove_points(
     client: QdrantClient,
     doc_id: str,
-    client_id: str
+    client_id: str,
+    project_id: str
 ) -> None:
     """
     Removes all points belonging to a specific document.
@@ -270,6 +279,8 @@ def remove_points(
     Args:
         client (QdrantClient): Active Qdrant client instance.
         doc_id (str): Document identifier whose points should be removed.
+        client_id (str): UUID Client identifier
+        project_id (str): UUID Project identifier
 
     Returns:
         None
@@ -291,6 +302,10 @@ def remove_points(
                             key="client_id",
                             match=MatchValue(value=client_id)
                         ),
+                        FieldCondition(
+                            key="project_id",
+                            match=MatchValue(value=project_id)
+                        ),
                     ],
                 )
             ),
@@ -310,6 +325,7 @@ def query_collection(
     client: QdrantClient,
     query: str,
     client_id: str,
+    project_id: str,
     top_k: int = 10
 ) -> list[dict]:
     """
@@ -318,7 +334,7 @@ def query_collection(
 
     Pipeline:
         1. Embed the query string using embed_text()
-        2. Apply client_id payload filter for multi-tenancy
+        2. Apply client_id and project_id payload filter for multi-tenancy
         3. Run hybrid search (dense + sparse)
         4. Fuse results using Reciprocal Rank Fusion (RRF)
         5. Return top_k results with text and relevance score
@@ -326,7 +342,8 @@ def query_collection(
     Args:
         client (QdrantClient): Active Qdrant client instance.
         query (str): User's natural language question.
-        client_id (str): Client identifier to scope the search.
+        client_id (str): Client identifier to scope the projects.
+        client_id (str): Project identifier to scope the search.
         top_k (int): Number of top results to return. Default 10.
 
     Returns:
@@ -363,6 +380,10 @@ def query_collection(
                 FieldCondition(
                     key="client_id",
                     match=MatchValue(value=client_id)
+                ),
+                FieldCondition(
+                    key="project_id",
+                    match=MatchValue(value=project_id)
                 )
             ]
         )
