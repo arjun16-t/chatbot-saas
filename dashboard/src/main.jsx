@@ -1,3 +1,8 @@
+import './styles/variables.css'
+import './styles/base.css'
+import './styles/components.css'
+import './styles/auth.css'
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
