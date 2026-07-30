@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
-from core.models import BaseModel, Client
+from core.models import BaseModel, Client, Project
 
 STATUS = [
     ('received', 'Received'),      # file uploaded, not yet processed
@@ -14,9 +14,10 @@ STATUS = [
     ('deleted', 'Deleted'),        # deleted file from all 3 (Qdrant, Actual and Postgres)
 ]
 
-def client_file_path(instance, filename):
-    client = str(instance.client.id)
-    return f"{client}/{filename}"
+def project_file_path(instance, filename):
+    client = str(instance.project.client_id)
+    project = str(instance.project.id)
+    return f"{client}/{project}/{filename}"
 
 def validate_file_size(file):
     if file.size > 10 * 1024 * 1024:
@@ -34,10 +35,10 @@ class Document(BaseModel):
         received -> processing -> created/updated/duplicate/failed
     """
     
-    client = models.ForeignKey(
-        Client,
+    project = models.ForeignKey(
+        Project,
         on_delete=models.CASCADE,
-        related_name='document',
+        related_name='documents',
         editable=False,
     )
 
@@ -51,7 +52,7 @@ class Document(BaseModel):
     doc_id = models.CharField(max_length=255)
 
     file_raw = models.FileField(
-        upload_to=client_file_path,
+        upload_to=project_file_path,
         validators=[
             validate_file_size,
             FileExtensionValidator(
@@ -81,8 +82,8 @@ class Document(BaseModel):
     class Meta:
         ordering = ['doc_id', 'status']
         indexes = [
-            models.Index(fields=['client']),
-            models.Index(fields=['client', 'doc_id']),
+            # models.Index(fields=['project']),  No Need to create since db_index = True automatically for FK
+            models.Index(fields=['project', 'doc_id']),
             models.Index(fields=['status']),
         ]
     

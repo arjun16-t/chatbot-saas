@@ -50,7 +50,7 @@ def validate_file(file_path: str | Path) -> Tuple[bool, Optional[str]]:
     return (True, None)
 
 
-def generate_filename(client_id: str, original_filename: str) -> str:
+def generate_filename(client_id: str, project_id:str, original_filename: str) -> str:
     """
     Generates a unique filename for storing the uploaded file.
 
@@ -68,7 +68,7 @@ def generate_filename(client_id: str, original_filename: str) -> str:
     sanitized = re.sub(r'[^\w\-.]', '_', original_filename.strip())
 
 
-    return f"{client_id}_{uid}_{sanitized}"
+    return f"{client_id}_{project_id}_{uid}_{sanitized}"
 
 
 def compute_file_hash(file_path: str | Path) -> str:

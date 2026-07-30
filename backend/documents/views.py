@@ -10,12 +10,14 @@ from kombu.exceptions import OperationalError
 
 from .models import Document
 from .serializers import DocumentSerializer
-from .tasks import ingest_document_task
+from .tasks import ingest_document_task, delete_document_task
 
 from rag.ingest import generate_doc_id
 from rag.utils.qdrant import get_qdrant_client, remove_points
+
 from utils.logger import get_logger
 from utils.files import compute_uploaded_file_hash
+from utils.client_project import get_client_project
 
 logger = get_logger(__name__)
 
@@ -26,7 +28,7 @@ class DocumentUploadView(APIView):
     for asynchronous ingestion.
     """
 
-    def post(self, request: Request) -> Response:
+    def post(self, request: Request, project_id) -> Response:
         """
         Handles POST /api/documents/upload/
 
@@ -40,10 +42,17 @@ class DocumentUploadView(APIView):
         uploaded_file = request.FILES['file_raw']
         original_filename = uploaded_file.name
         file_size = uploaded_file.size
+
+        project = get_client_project(request, project_id)      # Project
         
         # --- PRE-INGEST DEDUP CHECK ---
-        doc_id = generate_doc_id(str(request.user.id), original_filename)
-        existing = Document.objects.filter(client=request.user, doc_id=doc_id).first()
+        doc_id = generate_doc_id(str(project.id), original_filename)
+
+        # use filter here since we want silent failure
+        existing = Document.objects.filter(
+            project_id=project.id,          # Filter by client not required here
+            doc_id=doc_id
+        ).first()
 
         file_hash = compute_uploaded_file_hash(uploaded_file)
         uploaded_file.seek(0)
@@ -72,7 +81,7 @@ class DocumentUploadView(APIView):
             remove_points(
                 client=get_qdrant_client(),
                 doc_id=str(existing.doc_id),
-                client_id=str(existing.client_id)
+                client_id=str(existing.project.client_id)
             )
 
             document = existing
@@ -80,7 +89,7 @@ class DocumentUploadView(APIView):
             serializer.is_valid(raise_exception=True)
             with transaction.atomic():
                 document = serializer.save(
-                    client=request.user,
+                    project=project,
                     original_filename=original_filename,
                     file_size=file_size,
                     file_hash=file_hash
@@ -97,7 +106,7 @@ class DocumentUploadView(APIView):
 
             with transaction.atomic():
                 document = serializer.save(
-                    client=request.user,
+                    project=project,
                     original_filename=original_filename,
                     file_size=file_size,
                     status='received',
@@ -145,14 +154,10 @@ class DocumentListView(ListAPIView):
     serializer_class = DocumentSerializer
 
     def get_queryset(self):
-        """
-        Restrict the base queryset to documents owned by the
-        authenticated client.
-        """
+        project = get_client_project(self.request, self.kwargs.get("project_id"))
         queryset = (
             Document.objects
-            .filter(client=self.request.user)
-            .select_related("client")
+            .filter(project=project)
             .order_by('created_at')
             .exclude(status__in=['deleting', 'deleted'])
         )
@@ -164,7 +169,6 @@ class DocumentListView(ListAPIView):
     
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        logger.debug('Successfully fetched documents for client=%s', request.user.id)
         return response
 
 class DocumentRetrieveDestroyView(RetrieveDestroyAPIView):
@@ -191,15 +195,9 @@ class DocumentRetrieveDestroyView(RetrieveDestroyAPIView):
     lookup_field = 'doc_id'
 
     def get_queryset(self):
-        """
-        Restrict the queryset to the authenticated client's own documents,
-        excluding any currently mid-deletion or awaiting the periodic
-        cleanup sweep (Sprint 4). Shared by both retrieve() and destroy()
-        via get_object(), so the exclusion can't drift out of sync between
-        the two operations.
-        """
+        project = get_client_project(self.request, self.kwargs.get("project_id"))
         return Document.objects.filter(
-            client=self.request.user
+            project=project
         ).exclude(status__in=['deleting', 'deleted'])
 
     def retrieve(self, request, *args, **kwargs):
@@ -212,45 +210,11 @@ class DocumentRetrieveDestroyView(RetrieveDestroyAPIView):
         """
         Delete a document across all three systems, in order:
         Qdrant vectors -> filesystem file -> Postgres status.
-
-        The row is marked 'deleting' immediately (own committed write,
-        before any external call) so that a process crash mid-deletion
-        leaves a durable marker rather than silent inconsistent state.
-        No automatic rollback on failure (accepted gap for dev phase) --
-        recovery is deferred to Celery's retry/sweep mechanisms (Sprint 4).
-
-        TODO: introduce a DeletionFail APIException (mirroring IngestionFail)
-        once we confirm what failure modes remove_points actually raises,
-        so failures here get a proper error envelope instead of an
-        unhandled 500.
-        
-        TODO Sprint 4: once Celery is introduced, this should enqueue a task
-        instead of running synchronously, and a periodic sweep task should
-        bulk-delete all Document rows with status='deleted' once daily
-        (single DB write regardless of volume), rather than this view
-        ever deleting rows directly.
-
-        Raises:
-            RuntimeError: propagated from remove_points on genuine
-                Qdrant-side failure. Currently uncaught -- bubbles up
-                to custom_exception_handler as an unhandled exception.
         """
         instance.status = 'deleting'
         instance.save(update_fields=['status'])
 
         try:
-            remove_points(
-                client=get_qdrant_client(),
-                doc_id=str(instance.doc_id),
-                client_id=str(instance.client_id)
-            )
-            instance.file_raw.delete(save=False)
-        except Exception:
-            logger.exception(
-                'Document deletion failed mid-flight for doc_id=%s',
-                instance.doc_id
-            )
-            raise
-
-        instance.status = 'deleted'
-        instance.save(update_fields=['status'])
+            delete_document_task.delay(instance.doc_id)
+        except OperationalError:
+            logger.warning('Failed to enqueue deletion task for doc_id=%s', instance.doc_id)

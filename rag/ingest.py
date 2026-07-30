@@ -38,7 +38,7 @@ from rag.utils.qdrant import (
 
 client = get_qdrant_client()
 
-def ingest(file_path: str | Path, client_id: str) -> dict:
+def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
     """
     Runs the full ingestion pipeline for a single document.
 
@@ -51,6 +51,7 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
     Args:
         file_path (str): Absolute or relative path to the document.
         client_id (str): Unique identifier of the uploading client.
+        project_id (str): Unique identifier of the projecct.
 
     Returns:
         dict: Ingestion result containing:
@@ -60,14 +61,13 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
                 "chunk_count": int,
                 "status": "created" | "updated" | "duplicate",
                 "metadata": {
-                    "filename": str,
                     "original_name": str,
                     "file_type": str,
                     "size_bytes": int,
                     "client_id": str,
+                    "project_id": str,
                     "upload_date": str,
                     "file_hash": str,
-                    "doc_id": str,
                 }
             }
 
@@ -84,7 +84,7 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
     status = "created"
     result = {
         "doc_id": doc_id,
-        "filename": None,
+        "filename": "None",
         "chunk_count": None,
         "status": status
     }
@@ -96,33 +96,33 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
 
         file_hash = compute_file_hash(file_path_obj)
 
-        doc_id = generate_doc_id(client_id, file_path_obj.name)
+        doc_id = generate_doc_id(project_id, file_path_obj.name)
         result["doc_id"] = doc_id
 
         metadata_path = Path(f'metadata/{doc_id}.json')
 
-        # --- DEDUPLICATION CHECK ---
-        if metadata_path.exists():
-            with open(metadata_path, "r") as j:
-                meta = json.load(j)
-                orig_hash = meta.get("file_hash")
+        # # --- DEDUPLICATION CHECK ---
+        # if metadata_path.exists():
+        #     with open(metadata_path, "r") as j:
+        #         meta = json.load(j)
+        #         orig_hash = meta.get("file_hash")
 
-            if orig_hash == file_hash:
-                status = "duplicate"
-                result['status'] = status
-                if DEBUG:
-                    print(f'{Colors.YELLOW}The file: {file_path_obj} already exists. {Colors.END}')
-                return result
+        #     if orig_hash == file_hash:
+        #         status = "duplicate"
+        #         result['status'] = status
+        #         if DEBUG:
+        #             print(f'{Colors.YELLOW}The file: {file_path_obj} already exists. {Colors.END}')
+        #         return result
             
-            if orig_hash != file_hash:
-                if DEBUG:
-                    print(f'{Colors.YELLOW}The file: {file_path_obj} updated version detected. {Colors.END}')
+        #     if orig_hash != file_hash:
+        #         if DEBUG:
+        #             print(f'{Colors.YELLOW}The file: {file_path_obj} updated version detected. {Colors.END}')
                 
-                remove_points(client, doc_id, client_id)
-                status = "updated"
-                result['status'] = status
+        #         remove_points(client, doc_id, client_id, project_id)
+        #         status = "updated"
+        #         result['status'] = status
             
-        filename = generate_filename(client_id, file_path_obj.name)
+        filename = generate_filename(client_id, project_id, file_path_obj.name)
         result["filename"] = filename
 
         # --- ENSURE COLLECTION EXISTS ---
@@ -135,16 +135,15 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
 
         # --- SAVE BASIC METADATA ---
         metadata = {
-            "filename": filename,
             "original_name": file_path_obj.name,
             "file_type": file_path_obj.suffix,
             "size_bytes": file_path_obj.stat().st_size,
             "client_id": client_id,
+            "project_id": project_id,
             "upload_date": datetime.now().isoformat(),
             "file_hash": file_hash,
-            "doc_id": doc_id,
-            "status": status
         }
+        
 
         save_metadata(metadata, metadata_path)
 
@@ -157,6 +156,7 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
             chunks=chunks,
             doc_id=doc_id,
             client_id=client_id,
+            project_id=project_id,
             page_metadata=page_metadata
         )
         result["chunk_count"] = chunk_count
@@ -179,11 +179,8 @@ def ingest(file_path: str | Path, client_id: str) -> dict:
 
     except Exception as e:
         # --- CLEANUP ON FAILURE ---
-        # TODO: Sprint 4 — cleanup_on_failure should only delete
-        # the processed copy, not the original Django upload
-        # cleanup_on_failure(file_path_obj, metadata_path)
         if doc_id is not None:
-            remove_points(get_qdrant_client(), doc_id, client_id)
+            remove_points(get_qdrant_client(), doc_id, client_id, project_id)
         
         if DEBUG:
             print(f'{Colors.RED} Failed to ingest files: {e} {Colors.END}')

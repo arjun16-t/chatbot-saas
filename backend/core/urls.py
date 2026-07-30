@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from .views import (
     RegisterClientView,
     LoginClientView,
@@ -20,4 +20,5 @@ project_patterns = [
     path('', ProjectListCreateView.as_view(), name='list_create_project'),
     path('<uuid:pk>/rotate/', ProjectRotateKeyView.as_view(), name='rotate_key_project'),
     path('<uuid:pk>/revoke/', ProjectRevokeView.as_view(), name='revoke_key_project'),
+    path('<uuid:project_id>/', include('documents.urls')),
 ]
