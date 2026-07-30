@@ -61,7 +61,6 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
                 "chunk_count": int,
                 "status": "created" | "updated" | "duplicate",
                 "metadata": {
-                    "filename": str,
                     "original_name": str,
                     "file_type": str,
                     "size_bytes": int,
@@ -69,7 +68,6 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
                     "project_id": str,
                     "upload_date": str,
                     "file_hash": str,
-                    "doc_id": str,
                 }
             }
 
@@ -86,7 +84,7 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
     status = "created"
     result = {
         "doc_id": doc_id,
-        "filename": None,
+        "filename": "None",
         "chunk_count": None,
         "status": status
     }
@@ -124,7 +122,7 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
         #         status = "updated"
         #         result['status'] = status
             
-        filename = generate_filename(project_id, file_path_obj.name)
+        filename = generate_filename(client_id, project_id, file_path_obj.name)
         result["filename"] = filename
 
         # --- ENSURE COLLECTION EXISTS ---
@@ -137,7 +135,6 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
 
         # --- SAVE BASIC METADATA ---
         metadata = {
-            "filename": filename,
             "original_name": file_path_obj.name,
             "file_type": file_path_obj.suffix,
             "size_bytes": file_path_obj.stat().st_size,
@@ -145,9 +142,8 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
             "project_id": project_id,
             "upload_date": datetime.now().isoformat(),
             "file_hash": file_hash,
-            "doc_id": doc_id,
-            "status": status
         }
+        
 
         save_metadata(metadata, metadata_path)
 

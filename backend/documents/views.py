@@ -28,7 +28,7 @@ class DocumentUploadView(APIView):
     for asynchronous ingestion.
     """
 
-    def post(self, request: Request) -> Response:
+    def post(self, request: Request, project_id) -> Response:
         """
         Handles POST /api/documents/upload/
 
@@ -43,8 +43,7 @@ class DocumentUploadView(APIView):
         original_filename = uploaded_file.name
         file_size = uploaded_file.size
 
-        client = request.user                           # Client Object
-        project = get_client_project(request, self.kwargs.get("project_id"))      # Project
+        project = get_client_project(request, project_id)      # Project
         
         # --- PRE-INGEST DEDUP CHECK ---
         doc_id = generate_doc_id(str(project.id), original_filename)
