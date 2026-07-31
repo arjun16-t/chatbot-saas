@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AuthPage from './AuthPage.jsx'
-import Dashboard from './pages/Dashboard.jsx'
+import DashboardLayout from './pages/DashboardLayout.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
+import HomeView from './pages/HomeView.jsx'
+import ProjectView from './pages/ProjectView.jsx'
 
 function App() {
   return (
@@ -11,12 +13,11 @@ function App() {
       <Route path="/register" element={<AuthPage initialView="signup" />} />
       <Route
         path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+        element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}
+      >
+        <Route index element={<HomeView />} />
+        <Route path="projects/:projectId" element={<ProjectView />} />
+      </Route>
     </Routes>
   )
 }
