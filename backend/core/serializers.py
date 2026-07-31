@@ -97,9 +97,11 @@ class ProjectSerializer(serializers.ModelSerializer):
     API key is only ever returned directly by the create/rotate
     view responses, never via this serializer's normal output.
     """
+    document_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Project
-        fields = ['id', 'name', 'domain', 'is_active', 'widget_enabled', 'created_at']
+        fields = ['id', 'name', 'domain', 'is_active', 'widget_enabled', 'created_at', 'document_count']
         read_only_fields = ['id', 'created_at']
     
     def create(self, validated_data: dict) -> Project:

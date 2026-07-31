@@ -9,10 +9,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
-from django.db import IntegrityError
-from django.conf import settings
+from django.db.models import Count
 
 import secrets
 import hashlib
@@ -204,7 +203,9 @@ class ProjectListCreateView(ListCreateAPIView):
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
-        return Project.objects.filter(client=self.request.user)
+        return Project.objects.filter(client=self.request.user).annotate(
+            document_count=Count('documents')
+        )
 
     def create(self, request, *args, **kwargs):
         serializer = self.serializer_class(data = request.data)
@@ -225,6 +226,7 @@ class ProjectListCreateView(ListCreateAPIView):
                 "success": True,
                 "message": "Project registered successfully.",
                 "data": {
+                    "id": str(project.id),
                     "client_id": str(project.client_id),
                     "name": project.name,
                     "api_key": project._raw_api_key,
