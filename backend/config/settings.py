@@ -1,5 +1,5 @@
 from pathlib import Path
-from decouple import AutoConfig
+from decouple import AutoConfig, Csv
 
 import sys
 
@@ -22,7 +22,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
 # ==============================================================================
 # INSTALLED APPS
@@ -185,7 +185,8 @@ SIMPLE_JWT = {
 # CORS
 # ==============================================================================
 
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split(',')
+# CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS').split(',') Using CSV so that ', ' space is handled
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv())
 
 # Allows cookies/auth headers to be sent cross-origin (needed for dashboard later)
 CORS_ALLOW_CREDENTIALS = True
