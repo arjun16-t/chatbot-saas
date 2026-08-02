@@ -5,6 +5,7 @@ from .views import (
     RefreshClientView,
     LogoutClientView,
     ProjectListCreateView,
+    ProjectConfigView,
     ProjectRotateKeyView,
     ProjectRevokeView
 )
@@ -18,6 +19,7 @@ auth_patterns = [
 
 project_patterns = [
     path('', ProjectListCreateView.as_view(), name='list_create_project'),
+    path('<uuid:project_id>/config/', ProjectConfigView.as_view(), name='config_project'),
     path('<uuid:pk>/rotate/', ProjectRotateKeyView.as_view(), name='rotate_key_project'),
     path('<uuid:pk>/revoke/', ProjectRevokeView.as_view(), name='revoke_key_project'),
     path('<uuid:project_id>/', include('documents.urls')),

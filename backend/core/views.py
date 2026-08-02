@@ -2,12 +2,14 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.serializers import ValidationError
+from rest_framework.exceptions import PermissionDenied
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
@@ -17,10 +19,13 @@ import secrets
 import hashlib
 
 from .models import Project
-from .serializers import ClientSerializer, ProjectSerializer, CustomTokenSerializer
+from .serializers import ClientSerializer, ProjectSerializer, CustomTokenSerializer, ProjectThemeConfigSerializer
+from .permissions import ProjectDomainPermission
+from .authentication import ProjectAPIKeyAuthentication
 
 from utils.logger import get_logger
 from utils.token_obtain import set_refresh_cookie
+from utils.client_project import get_client_project
 
 logger = get_logger(__name__)
 
@@ -235,6 +240,50 @@ class ProjectListCreateView(ListCreateAPIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+class ProjectConfigView(APIView):
+    """
+    GET: fetch widget theme config (dashboard JWT or widget API-key).
+    PATCH: update widget theme config (dashboard JWT only).
+    """
+    authentication_classes = [JWTAuthentication, ProjectAPIKeyAuthentication]
+    permission_classes = [IsAuthenticated, ProjectDomainPermission]
+
+    def get_object(self, request, project_id):
+        """
+        Resolve the Project for this request, enforcing ownership.
+
+        Args:
+            request: DRF request (request.auth is Project if API-key path, else None)
+            project_id: UUID from URL
+
+        Returns:
+            Project instance
+
+        Raises:
+            Http404: JWT path, client doesn't own this project
+            PermissionDenied: API-key path, key's project doesn't match URL project_id
+        """
+        if isinstance(request.auth, Project):
+             # API-key path: request.auth IS the authenticated project
+            if str(request.auth.id) != str(project_id):
+                raise PermissionDenied("This API key does not belong to the requested project.")
+            return request.auth
+        return get_client_project(request, project_id)
+
+    def get(self, request, project_id):
+        project = self.get_object(request, project_id)
+        serializer = ProjectThemeConfigSerializer(project, context={'request': request})
+        return Response(serializer.data)
+
+    def patch(self, request, project_id):
+        if isinstance(request.auth, Project):
+            raise PermissionDenied("Widget API keys cannot modify project config.")
+        project = self.get_object(request, project_id)
+        serializer = ProjectThemeConfigSerializer(project, data=request.data, partial=True, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class ProjectRotateKeyView(APIView):

@@ -1,7 +1,10 @@
 import uuid
 import secrets
 import hashlib
+
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 
@@ -110,6 +113,7 @@ class ProjectManager(models.Manager):
             client=client,
             name=name,
             domain=domain,
+            bot_display_name=name,
             api_key_hash=hashlib.sha256(
                 api_key.encode()
             ).hexdigest(),
@@ -119,8 +123,66 @@ class ProjectManager(models.Manager):
         project.save(using=self._db)
         return project, api_key
 
+DEFAULT_GREETING = "Welcome! How may I assist you?"
 
-class Project(BaseModel):
+BUBBLE_POSITION = [
+    ("bottom-left", "Bottom Left"),
+    ("bottom-right", "Bottom Right"),
+]
+
+def default_widget_theme():
+    return {
+        "primary_color": "#C8860A",
+        "secondary_color": "#F5C842",
+        "background_color": "#FFFDF5",
+        "text_color": "#111111",
+        "bot_bubble_color": "#FFFFFF",
+        "user_bubble_color": "#C8860A",
+        "user_text_color": "#FFFFFF",
+    }
+
+def logo_file_path(instance, filename):
+    client = str(instance.client_id)
+    project = str(instance.id)
+    return f"{client}/{project}/logo/{filename}"
+
+def validate_logo_size(file):
+    if file.size > 1 * 1024 * 1024:
+        raise ValidationError("File size cannot exceed 1MB")
+
+def return_name(instance):
+    return instance.name
+
+class ProjectTheme(models.Model):
+    theme_color = models.JSONField(
+        default=default_widget_theme,
+        blank=False,
+        null=False
+    )
+
+    logo_raw = models.ImageField(
+        upload_to=logo_file_path,
+        validators=[
+            validate_logo_size,
+            FileExtensionValidator(
+                allowed_extensions=['jpg', 'png', 'svg', 'webp']
+            )
+        ],
+        help_text="JPG/PNG/SVG/WEBP - max file size 1 MB",
+        blank=True,
+        null=True
+    )
+
+    bot_display_name = models.CharField(max_length=50)
+
+    greeting_message = models.TextField(max_length=200, default=DEFAULT_GREETING)
+
+    bubble_position = models.CharField(max_length=12, choices=BUBBLE_POSITION, default='bottom-right')
+
+    class Meta:
+        abstract = True
+
+class Project(BaseModel, ProjectTheme):
     """
     A single client-owned website/integration, each with its own
     API key and registered domain.
