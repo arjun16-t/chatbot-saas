@@ -302,3 +302,9 @@ CELERY_TASK_SOFT_TIME_LIMIT = 60 * 8        # what is a good value
 CELERY_RESULT_EXPIRES = 60 * 60
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# ==============================================================================
+# EMAIL CONFIG
+# ==============================================================================
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
