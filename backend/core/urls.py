@@ -4,17 +4,28 @@ from .views import (
     LoginClientView,
     RefreshClientView,
     LogoutClientView,
+    SendOTPView,
+    VerifyOTPView,
+    ResendOTPView,
+    WidgetConfigView,
     ProjectListCreateView,
     ProjectConfigView,
     ProjectRotateKeyView,
-    ProjectRevokeView
+    ProjectRevokeView,
 )
 
 auth_patterns = [
+    path('send-otp/', SendOTPView.as_view(), name='send_otp'),
+    path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
+    path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
     path('register/', RegisterClientView.as_view(), name='register_client'),
     path('login/', LoginClientView.as_view(), name='login'),
     path('logout/', LogoutClientView.as_view(), name='logout'),
     path('token/refresh/', RefreshClientView.as_view(), name='refresh_jwt'),
+]
+
+widget_patterns = [
+    path('config/', WidgetConfigView.as_view(), name='widget_config'),
 ]
 
 project_patterns = [

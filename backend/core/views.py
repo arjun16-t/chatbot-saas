@@ -525,3 +525,18 @@ class ProjectRevokeView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+class WidgetConfigView(APIView):
+    """
+    GET /api/widget/config/
+    Key-only config endpoint for the embedded widget. Resolves the
+    project purely from the API key (request.auth) — no project_id
+    in the URL, since the widget never knows its own UUID.
+    """
+    authentication_classes = [ProjectAPIKeyAuthentication]
+    permission_classes = [IsAuthenticated, ProjectDomainPermission]
+
+    def get(self, request):
+        project = request.auth
+        serializer = ProjectThemeConfigSerializer(project, context={'request': request})
+        return Response(serializer.data)
