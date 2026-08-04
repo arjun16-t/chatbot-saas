@@ -1,6 +1,7 @@
 import uuid
 import secrets
 import hashlib
+from datetime import timezone
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
@@ -226,3 +227,27 @@ class Project(BaseModel, ProjectTheme):
                 name="unique_domain_per_project",
             )
         ]
+
+class OTPVerification(BaseModel):
+    email = models.EmailField()
+    otp = models.CharField(max_length=6)
+
+    is_verified = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    attempts = models.IntegerField(default=0)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def verify(self, otp):
+        if self.is_expired():
+            return False, "OTP has expired."
+        if self.attempts >= 3:
+            return False, "Maximum attempts exceeded."
+        if self.otp != otp:
+            self.attempts += 1
+            self.save()
+            return False, "Invalid OTP."
+        self.is_verified = True
+        self.save()
+        return True, "OTP verified successfully."

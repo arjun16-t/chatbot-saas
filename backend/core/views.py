@@ -12,13 +12,17 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from django.db import transaction, IntegrityError
-from django.shortcuts import get_object_or_404
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 import secrets
 import hashlib
+from datetime import timedelta
+from django.utils import timezone
 
-from .models import Project
+from .models import Project, Client, OTPVerification
 from .serializers import ClientSerializer, ProjectSerializer, CustomTokenSerializer, ProjectThemeConfigSerializer
 from .permissions import ProjectDomainPermission
 from .authentication import ProjectAPIKeyAuthentication
@@ -26,8 +30,159 @@ from .authentication import ProjectAPIKeyAuthentication
 from utils.logger import get_logger
 from utils.token_obtain import set_refresh_cookie
 from utils.client_project import get_client_project
+from utils.otp import create_and_send_otp
 
 logger = get_logger(__name__)
+
+class SendOTPView(APIView):
+    """
+    POST /api/auth/send-otp/
+    Body: {email}
+    Rejects if a Client with this email already exists.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        validator = EmailValidator(code="invalid_email")
+        try:
+            validator(email)
+        except DjangoValidationError:
+            raise ValidationError({"email": "Enter a valid email address."})
+
+        if Client.objects.filter(email=email).exists():
+            return Response(
+            {
+                "success": False,
+                "message": "Client Already Exists.",
+                "data": {
+                    "email": email,
+                }
+            },
+            status=status.HTTP_409_CONFLICT
+        )
+
+        otp_row = create_and_send_otp(email)
+        return Response({
+            "success": True,
+            "message": "OTP Generated Successfully.",
+            "data": {
+                "email": email
+            }
+        }, status=status.HTTP_200_OK)
+
+class VerifyOTPView(APIView):
+    """
+    POST /api/auth/verify-otp/
+    Body: {email, otp}
+    Marks OTPVerification.is_verified = True. Does NOT create Client.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email", "").strip()
+        otp = request.data.get("otp", "").strip()
+        if not email or not otp:
+            return Response({
+                "success": False,
+                "message": "Email and OTP both required",
+                "data": {
+                    "email": email
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            otp_row = OTPVerification.objects.filter(
+                email=email,
+                is_verified=False
+            ).latest('created_at')
+            
+        except OTPVerification.DoesNotExist:
+            logger.exception(f'{email} does not exist')
+            return Response({
+                "success": False,
+                "message": "email does not exist",
+                "data": {
+                    "email": email
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        is_valid, msg = otp_row.verify(otp)
+        if not is_valid:
+            return Response({
+                "success": False,
+                "message": msg,
+                "data": {
+                    "email": email
+                }
+            }, status=status.HTTP_400_BAD_REQUEST) 
+
+        # OTP Verified Successfully
+        return Response({
+            "success": True,
+            "message": msg,
+            "data": {
+                "email": email
+            }
+        }, status=status.HTTP_200_OK) 
+
+class ResendOTPView(APIView):
+    """
+    POST /api/auth/resend-otp/
+    Body: {email}
+    Same as SendOTPView but conceptually a distinct trigger from the frontend.
+    # decide: rate-limit resend attempts? (e.g. min interval between sends)
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        validator = EmailValidator(code="invalid_email")
+        try:
+            validator(email)
+        except DjangoValidationError:
+            raise ValidationError({"email": "Enter a valid email address."})
+
+        try:
+            otp_row = OTPVerification.objects.filter(
+                email=email,
+                is_verified=False
+            ).latest('created_at')
+
+            # Generate new OTP
+            if otp_row:
+                time_elapsed = timezone.now() - otp_row.created_at
+                if time_elapsed < timedelta(seconds=30):
+                    remaining = 30 - int(time_elapsed.total_seconds())
+                    return Response(
+                        {'error': f'Please wait {remaining} seconds before requesting a new OTP.'},
+                        status=status.HTTP_429_TOO_MANY_REQUESTS
+                    )
+                
+            # Delete existing unverified OTPs
+            OTPVerification.objects.filter(
+                email=email,
+                is_verified=False
+            ).delete()
+        
+        except OTPVerification.DoesNotExist:
+            logger.exception(f'{email} does not exist')
+            return Response({
+                "success": False,
+                "message": "email does not exist",
+                "data": {
+                    "email": email
+                }
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        otp_row = create_and_send_otp(email)
+        return Response({
+            "success": True,
+            "message": "OTP Regenerated Successfully.",
+            "data": {
+                "email": email
+            }
+        }, status=status.HTTP_200_OK)
 
 class RegisterClientView(APIView):
     """
@@ -49,8 +204,28 @@ class RegisterClientView(APIView):
             201 with client_id, email and api_key on success.
             400 with validation errors on failure.
         """
-        serializer = ClientSerializer(data = request.data)
+        email = request.data.get("email", "").strip()
 
+        try:
+            otp_row = OTPVerification.objects.filter(
+                email=email,
+                is_verified=True
+            ).latest('created_at')
+        except OTPVerification.DoesNotExist:
+            return Response({
+                "success": False,
+                "message": "Email not verified. Please verify OTP first.",
+                "data": {"email": email}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if otp_row.is_expired():
+            return Response({
+                "success": False,
+                "message": "Verification expired. Please request a new OTP.",
+                "data": {"email": email}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = ClientSerializer(data = request.data)
         serializer.is_valid(raise_exception=True)
         
         with transaction.atomic():
@@ -72,6 +247,8 @@ class RegisterClientView(APIView):
         )
 
         return set_refresh_cookie(response, refresh)
+
+
 
 class LoginClientView(TokenObtainPairView):
     """

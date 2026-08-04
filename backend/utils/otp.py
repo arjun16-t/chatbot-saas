@@ -1,9 +1,12 @@
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.conf import settings
+from core.models import OTPVerification
 
+from datetime import timezone, timedelta
 from smtplib import SMTPException
-
 import secrets
-from logger import get_logger
+from utils.logger import get_logger
 logger = get_logger(__name__)
 
 def generate_otp() -> str:
@@ -30,28 +33,35 @@ def send_otp_email(email: str, otp: str) -> None:
         # decide: should a send failure block registration, or fail silently/log only?
     """
     try:
-        send_mail(
-            subject='OTP Verification — RML Group of Institutions',
-            message=(
-                f"Dear {student_name},\n\n"
-                f"Your OTP for application verification is:\n\n"
-                f"    {otp}\n\n"
-                f"This OTP is valid for 10 minutes.\n"
-                f"Do not share this OTP with anyone.\n\n"
-                f"If you did not request this, please ignore.\n\n"
-                f"Regards,\n"
-                f"Admissions Team\n"
-                f"RML Group of Institutions\n"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
+        context = {
+            "otp_code": otp,
+            "expiry_minutes": 10
+        }
+        html_content = render_to_string(
+            "backend/utils/email.html",
+            context=context
         )
-        return True
-    except Exception as e:
-        if settings.DEBUG:
-            print(f'\033[91mOTP email failed: {e}\033[0m')
-        return False
+        text_content = render_to_string(
+            "backend/utils/email.txt",
+            context=context
+        )
+
+        msg = EmailMultiAlternatives(
+            subject=f"Your Verification Code for AthenaChat: {otp}",
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
+
+    except SMTPException:
+        logger.exception("OTP Email was not sent")
+        raise
+
+    except Exception:
+        logger.exception("Mail could not be sent")
+        raise
 
 
 def create_and_send_otp(email: str) -> "OTPVerification":
@@ -65,4 +75,12 @@ def create_and_send_otp(email: str) -> "OTPVerification":
     Returns:
         OTPVerification: newly created row
     """
-    ...
+    otp = generate_otp()
+    row = OTPVerification.objects.create(
+        email=email,
+        otp=otp,
+        expires_at = timezone.now() + timedelta(minutes=10)
+    )
+    send_otp_email(email, otp)
+
+    return row
