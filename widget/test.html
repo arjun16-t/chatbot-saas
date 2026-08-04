@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Widget Test Page</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 40px; background: #f5f5f5; }
+    h1 { color: #333; }
+  </style>
+</head>
+<body>
+  <h1>Some client's website</h1>
+  <p>This page simulates a business's site with AthenaChat embedded.</p>
+  <p>Config and chat requests are mocked below — no real backend needed for this visual check.</p>
+
+  <script>
+    // Mock fetch so widget.js's config + chat calls resolve without a real backend.
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+      if (url.indexOf('/api/widget/config/') !== -1) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            theme_color: {
+              primary_color: '#C8860A',
+              secondary_color: '#F5C842',
+              background_color: '#FFFDF5',
+              text_color: '#111111',
+              bot_bubble_color: '#FFFFFF',
+              user_bubble_color: '#FCEFD4',
+              user_text_color: '#111111',
+            },
+            logo_url: null,
+            bot_display_name: 'AthenaChat',
+            greeting_message: 'Welcome! How may I assist you?',
+            bubble_position: 'bottom-right',
+          }),
+        });
+      }
+      if (url.indexOf('/api/chat/') !== -1) {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              json: () => Promise.resolve({
+                answer: "Based on the 2026 Employee Handbook, team members accrue 20 days of Paid Time Off annually.",
+              }),
+            });
+          }, 1000); // fake latency so the typing indicator is visible
+        });
+      }
+      return originalFetch(url, options);
+    };
+  </script>
+
+  <!-- data-api-key value doesn't matter, mocked fetch ignores it -->
+  <script src="./widget.js" data-api-key="ac_test_key_123"></script>
+
+  <script>
+    // Auto-open the widget and fire a test message after it renders,
+    // so you don't have to click through manually every reload.
+    setTimeout(() => {
+      const host = document.getElementById('athenachat-widget-host');
+      if (!host || !host.shadowRoot) {
+        console.warn('Widget host not found — check console for widget.js errors.');
+        return;
+      }
+      const bubble = host.shadowRoot.querySelector('.ac-bubble');
+      if (bubble) bubble.click();
+
+      setTimeout(() => {
+        const input = host.shadowRoot.querySelector('.ac-input');
+        const sendBtn = host.shadowRoot.querySelector('.ac-send');
+        if (input && sendBtn) {
+          input.value = 'How do I deploy this?';
+          sendBtn.click();
+        }
+      }, 400);
+    }, 500);
+  </script>
+</body>
+</html>

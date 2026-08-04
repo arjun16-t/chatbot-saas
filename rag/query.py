@@ -46,43 +46,38 @@ def _get_groq_client():
     
     return _groq_client
 
-# TODO: Sprint 2 — switch to AsyncGroq for non-blocking LLM calls in Django
-
 def query(
     question: str,
-    client_id: str
+    client_id: str,
+    project_id: str
 ) -> dict:
     """
     Runs the full query pipeline for a single query.
 
-    Accepts a question and client ID, and then embeds the query,
-    retrieves document alongwith payload, builds prompt,
-    Groq API Call and finally responds with answer.
+    Accepts a question, client ID, and project ID, and then embeds
+    the query, retrieves documents scoped to that project alongwith
+    payload, builds prompt, Groq API Call and finally responds with
+    answer.
 
     Handles missing document error by returning a default message.
-    
+
     Handles unanswered query by saving it for future reference
     in metadata/unanswered/{client_id}_unanswered.json
 
     Args:
-        query (str): Natural language query from user.
+        question (str): Natural language query from user.
         client_id (str): Unique identifier of the uploading client.
+        project_id (str): Unique identifier of the project being queried.
 
     Returns:
         dict: Query result containing:
             {
                 "client_id": str,
+                "project_id": str,
                 "query": str,
                 "answer": str,
                 "used_sources": list
-                "metadata": {
-                    "retrieval_count": int,
-                    "max_score": int,
-                    "min_score": int,
-                    "avg_score": float,
-                    "model": QUERYING_MODEL,
-                    "latency_ms": int
-                }
+                "metadata": {...}
                 "status": "answered" | "unanswered"
             }
 
@@ -90,15 +85,16 @@ def query(
         ValueError: If empty query received.
         RuntimeError: If any stage of the pipeline fails.
     """
-    logger.info(f"Query received | client_id={client_id} | query={question[:50]}")
+    logger.info(f"Query received | client_id={client_id} | project_id={project_id} | query={question[:50]}")
     start = time.time()
 
     try:
         if not question.strip():
             raise ValueError("The query cannot be empty")
-        
+
         result_dict = {
             "client_id": client_id,
+            "project_id": project_id,
             "query": question,
             "answer": None,
             "used_sources": [],
@@ -106,7 +102,12 @@ def query(
             "status": "unanswered"
         }
 
-        results = query_collection(client=_get_qdrant_client(), query=question, client_id=client_id)
+        results = query_collection(
+            client=_get_qdrant_client(),
+            query=question,
+            client_id=client_id,
+            project_id=project_id
+        )
 
         if len(results) == 0:
             answer = f"""

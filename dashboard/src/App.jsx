@@ -4,6 +4,7 @@ import DashboardLayout from './pages/DashboardLayout.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
 import HomeView from './pages/HomeView.jsx'
 import ProjectView from './pages/ProjectView.jsx'
+import ProjectConfigPage from './pages/ProjectConfigPage.jsx'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       >
         <Route index element={<HomeView />} />
         <Route path="projects/:projectId" element={<ProjectView />} />
+        <Route path="projects/:projectId/config" element={<ProjectConfigPage />} />
       </Route>
     </Routes>
   )

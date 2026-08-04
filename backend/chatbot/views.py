@@ -1,59 +1,53 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
 from rest_framework import status
+
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.exceptions import ChatbotUnavailable
 from core.permissions import ProjectDomainPermission
 from core.authentication import ProjectAPIKeyAuthentication
 from core.throttling import ClientProjectThrottle
+from core.models import Project
 
 from .models import UnansweredQuery
 from .serializers import QuerySerializer
 
 from rag.query import query as query_rag
 from utils.logger import get_logger
+from utils.client_project import get_client_project
 
 logger = get_logger(__name__)
 
-
 class ChatView(APIView):
-    """
-    Authenticated endpoint for querying the RAG pipeline.
-    Accepts a question, runs it through the RAG pipeline,
-    saves unanswered queries to the database, and returns
-    the answer with sources and metadata.
-    """
     authentication_classes = [JWTAuthentication, ProjectAPIKeyAuthentication]
     permission_classes = [IsAuthenticated, ProjectDomainPermission]
     throttle_classes = [ClientProjectThrottle]
-    
+
     def post(self, request) -> Response:
-        """
-        Handles POST /api/chat/
-        
-        Args:
-            request: DRF request object containing question in body.
-        
-        Returns:
-            200 with answer, sources, status and latency on success.
-            400 on validation error or empty question.
-            500 on pipeline failure.
-        """
         serializer = QuerySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         question = serializer.validated_data['question']
         client_id = str(request.user.id)
-        # client_id = "temp_123" if settings.DEBUG else str(request.user.id)
+
+        if isinstance(request.auth, Project):
+            project_id = str(request.auth.id)
+        else:
+            project_id_param = request.data.get('project_id')
+            if not project_id_param:
+                raise ValidationError({"project_id": "This field is required for dashboard/JWT queries."})
+            project = get_client_project(request, project_id_param)
+            project_id = str(project.id)
 
         try:
-            result = query_rag(question, client_id)
+            result = query_rag(question, client_id, project_id)
         except Exception as e:
             logger.exception(f'Query Pipeline Failed')
             raise ChatbotUnavailable()
-        
+
         response = {
             "answer": result['answer'],
             "sources": result['used_sources'],
@@ -67,12 +61,12 @@ class ChatView(APIView):
                 query=result['query']
             )
             logger.info(f"Unanswered Query: {result['query']} Saved!")
-            
-        
+
         logger.info(
             "Query processed",
             extra={
                 "query": result["query"],
+                "project_id": project_id,
                 "latency_ms": response["latency_ms"],
                 "status": result["status"]
             }
