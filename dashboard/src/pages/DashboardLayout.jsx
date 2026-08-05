@@ -174,6 +174,17 @@ function DashboardLayout() {
                 <BarChart2 size={24} />
                 <span>Metrics</span>
               </button>
+              {!isHomeView && activeProject && (
+                <button
+                  type="button"
+                  className="nav-tile"
+                  onClick={() => navigate(`/dashboard/projects/${activeProject.id}/config`)}
+                >
+                  <Settings size={24} />
+                  <span>Configure</span>
+                </button>
+              )}
+
             </nav>
 
             <div className="sidebar-collapsible">
