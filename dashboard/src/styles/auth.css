@@ -489,3 +489,177 @@
 .animate-shake {
   animation: error-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
+
+/* ── First/Last name split row ─────────────────────────────────── */
+.form-row-split {
+  display: flex;
+  gap: var(--space-4);
+}
+.form-row-split .form-group {
+  flex: 1;
+}
+
+/* ── OTP verification ──────────────────────────────────────────── */
+.otp-sent-to {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+.otp-sent-to strong {
+  color: var(--color-text-primary);
+}
+
+.otp-boxes-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.otp-box {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.03);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+.otp-box:focus {
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 3px rgba(200, 134, 10, 0.15);
+}
+.otp-box:disabled {
+  opacity: 0.7;
+}
+.otp-box-error {
+  border-color: var(--color-status-error);
+}
+
+/* Per-box entry animation: subtle 3D flip-in as each digit lands */
+.otp-box-spin {
+  animation: otp-digit-spin 0.35s ease;
+}
+@keyframes otp-digit-spin {
+  0% { transform: rotateX(90deg) scale(0.8); opacity: 0; }
+  60% { transform: rotateX(-12deg) scale(1.05); opacity: 1; }
+  100% { transform: rotateX(0) scale(1); }
+}
+
+/* Wrong-code shake, reusing the same shake motion language as email/password fields */
+.otp-row-shake {
+  animation: otp-row-shake-kf 0.4s ease;
+}
+@keyframes otp-row-shake-kf {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+/* Verified celebration state */
+.otp-verified-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) 0 var(--space-4);
+  animation: otp-verified-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes otp-verified-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.otp-verified-icon-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: rgba(74, 124, 89, 0.12);
+  color: var(--color-status-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.otp-check-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-success);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--color-surface);
+  animation: otp-check-pop 0.4s 0.3s both cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes otp-check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.otp-verified-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--color-status-success);
+}
+
+/* Resend row */
+.otp-resend-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-5);
+}
+.otp-resend-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-accent-primary);
+  transition: opacity var(--transition-fast);
+}
+.otp-resend-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.otp-resend-btn:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.otp-change-email {
+  display: block;
+  margin: var(--space-4) auto 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+.otp-change-email:hover {
+  color: var(--color-text-primary);
+}

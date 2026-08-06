@@ -1,9 +1,11 @@
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.utils import timezone
+
 from core.models import OTPVerification
 
-from datetime import timezone, timedelta
+from datetime import timedelta
 from smtplib import SMTPException
 import secrets
 from utils.logger import get_logger
@@ -38,11 +40,11 @@ def send_otp_email(email: str, otp: str) -> None:
             "expiry_minutes": 10
         }
         html_content = render_to_string(
-            "backend/utils/email.html",
+            "emails/email.html",
             context=context
         )
         text_content = render_to_string(
-            "backend/utils/email.txt",
+            "emails/email.txt",
             context=context
         )
 

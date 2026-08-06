@@ -1,8 +1,8 @@
 import uuid
 import secrets
 import hashlib
-from datetime import timezone
 
+from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator

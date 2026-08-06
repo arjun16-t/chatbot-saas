@@ -67,7 +67,7 @@ class ClientSerializer(serializers.ModelSerializer):
         """
         password = validated_data.pop('password')
         email = validated_data.pop('email')
-        display_name = validated_data.get('display_name', '')
+        display_name = validated_data.pop('display_name')
         client = Client.objects.create_user(
             email=email,
             password=password,

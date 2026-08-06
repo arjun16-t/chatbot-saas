@@ -1,12 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext.jsx'
 import { useState, useRef, useEffect } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Lock, Check } from 'lucide-react'
 import gsap from 'gsap'
 import AthenaBotLogo from './assets/AthenaBot.png'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const OTP_LENGTH = 6
+const RESEND_COOLDOWN_SECONDS = 30
 
 const STRENGTH_LEVELS = [
   { label: '', color: 'var(--color-border)' },
@@ -17,8 +19,15 @@ const STRENGTH_LEVELS = [
   { label: 'Strong', color: 'var(--color-status-success)' },
 ]
 
+function maskEmail(email) {
+  const [user, domain] = email.split('@')
+  if (!user || !domain) return email
+  const visible = user.slice(0, Math.min(2, user.length))
+  return `${visible}${'*'.repeat(Math.max(user.length - visible.length, 1))}@${domain}`
+}
+
 function AuthPage({ initialView = 'signin' }) {
-  const [activeView, setActiveView] = useState(initialView)
+  const [activeView, setActiveView] = useState(initialView) // 'signin' | 'signup' | 'verify-otp'
 
   // ---- Sign-in form state ----
   const [email, setEmail] = useState('')
@@ -31,6 +40,12 @@ function AuthPage({ initialView = 'signin' }) {
   const [loginApiError, setLoginApiError] = useState('')
 
   // ---- Register form state ----
+  const [regFirstName, setRegFirstName] = useState('')
+  const [regLastName, setRegLastName] = useState('')
+  const [regFirstNameError, setRegFirstNameError] = useState(false)
+  const [regLastNameError, setRegLastNameError] = useState(false)
+  const [regFirstNameShake, setRegFirstNameShake] = useState(false)
+  const [regLastNameShake, setRegLastNameShake] = useState(false)
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [regEmailError, setRegEmailError] = useState(false)
@@ -40,9 +55,21 @@ function AuthPage({ initialView = 'signin' }) {
   const [isRegisterLoading, setIsRegisterLoading] = useState(false)
   const [registerApiError, setRegisterApiError] = useState('')
 
+  // ---- OTP verification state ----
+  const [otpDigits, setOtpDigits] = useState(Array(OTP_LENGTH).fill(''))
+  const [otpStatus, setOtpStatus] = useState('idle') // 'idle' | 'verifying' | 'verified' | 'error'
+  const [otpError, setOtpError] = useState('')
+  const [otpRowShake, setOtpRowShake] = useState(false)
+  const [spinningIndex, setSpinningIndex] = useState(null)
+  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SECONDS)
+  const [isResending, setIsResending] = useState(false)
+  const [isFinalizing, setIsFinalizing] = useState(false)
+  const [finalizeError, setFinalizeError] = useState('')
+
   // ---- Refs (focus management + GSAP, kept out of React state) ----
   const emailInputRef = useRef(null)
   const regEmailInputRef = useRef(null)
+  const otpInputRefs = useRef([])
   const overlayPanelRef = useRef(null)
   const blob1Ref = useRef(null)
   const blob2Ref = useRef(null)
@@ -51,17 +78,30 @@ function AuthPage({ initialView = 'signin' }) {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const containerClass = activeView === 'signup'
+  const containerClass = (activeView === 'signup' || activeView === 'verify-otp')
     ? 'auth-flip-container right-active'
     : 'auth-flip-container'
 
-  // ---- Focus the relevant email field after the flip transition finishes ----
+  // ---- Focus management per view ----
   useEffect(() => {
-    const targetRef = activeView === 'signup' ? regEmailInputRef : emailInputRef
-    const timer = setTimeout(() => {
-      targetRef.current?.focus()
-    }, 700)
+    let timer
+    if (activeView === 'signup') {
+      timer = setTimeout(() => regEmailInputRef.current?.focus(), 700)
+    } else if (activeView === 'signin') {
+      timer = setTimeout(() => emailInputRef.current?.focus(), 700)
+    } else if (activeView === 'verify-otp') {
+      timer = setTimeout(() => otpInputRefs.current[0]?.focus(), 300)
+    }
     return () => clearTimeout(timer)
+  }, [activeView])
+
+  // ---- Resend cooldown countdown ----
+  useEffect(() => {
+    if (activeView !== 'verify-otp') return
+    const timer = setInterval(() => {
+      setResendCooldown((s) => (s > 0 ? s - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
   }, [activeView])
 
   // ---- Blob parallax via GSAP, driven by refs — never React state ----
@@ -124,6 +164,11 @@ function AuthPage({ initialView = 'signin' }) {
     setTimeout(() => setShakeFn(false), 400)
   }
 
+  function triggerOtpShake() {
+    setOtpRowShake(true)
+    setTimeout(() => setOtpRowShake(false), 400)
+  }
+
   // ---- Sign-in submit ----
   async function handleLoginSubmit(e) {
     e.preventDefault()
@@ -150,7 +195,11 @@ function AuthPage({ initialView = 'signin' }) {
         setLoginApiError(data.message || 'Login failed. Check your credentials.')
         return
       }
-      login(data.data.access, { client_id: data.data.client_id, email: data.data.email })
+      login(data.data.access, {
+        client_id: data.data.client_id,
+        email: data.data.email,
+        display_name: data.data.display_name,
+      })
       navigate('/dashboard')
     } catch (err) {
       setLoginApiError('Could not reach the server. Try again.')
@@ -159,37 +208,186 @@ function AuthPage({ initialView = 'signin' }) {
     }
   }
 
-  // ---- Register submit ----
+  // ---- Step 1: validate + send OTP ----
   async function handleRegisterSubmit(e) {
     e.preventDefault()
     const emailValid = EMAIL_RE.test(regEmail.trim())
+    const firstNameValid = regFirstName.trim().length > 0
+    const lastNameValid = regLastName.trim().length > 0
 
     setRegEmailError(!emailValid)
+    setRegFirstNameError(!firstNameValid)
+    setRegLastNameError(!lastNameValid)
     if (!emailValid) triggerShake(setRegEmailShake)
-    if (!emailValid || !allRequirementsMet) return
+    if (!firstNameValid) triggerShake(setRegFirstNameShake)
+    if (!lastNameValid) triggerShake(setRegLastNameShake)
+    if (!emailValid || !firstNameValid || !lastNameValid || !allRequirementsMet) return
 
     setIsRegisterLoading(true)
     setRegisterApiError('')
     try {
-      const res = await fetch(`${API_BASE}/api/auth/register/`, {
+      const res = await fetch(`${API_BASE}/api/auth/send-otp/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: regEmail.trim(), password: regPassword }),
+        body: JSON.stringify({ email: regEmail.trim() }),
       })
       const data = await res.json()
       if (!res.ok) {
-        setRegisterApiError(data.message || 'Registration failed.')
+        setRegisterApiError(data.message || 'Could not send verification code.')
         return
       }
-      console.log('Registration successful:', data.data)
-      // TODO: decide post-register flow (auto-login vs redirect to /login)
+      sessionStorage.setItem('pending_registration_email', regEmail.trim())
+      setOtpDigits(Array(OTP_LENGTH).fill(''))
+      setOtpStatus('idle')
+      setOtpError('')
+      setFinalizeError('')
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setActiveView('verify-otp')
     } catch (err) {
       setRegisterApiError('Could not reach the server. Try again.')
     } finally {
       setIsRegisterLoading(false)
     }
   }
+
+  // ---- OTP box handlers ----
+  function handleOtpChange(index, rawValue) {
+    if (otpStatus === 'verifying' || otpStatus === 'verified') return
+    const digit = rawValue.replace(/\D/g, '').slice(-1)
+    if (rawValue !== '' && !digit) return
+
+    const next = [...otpDigits]
+    next[index] = digit
+    setOtpDigits(next)
+
+    if (digit) {
+      setSpinningIndex(index)
+      setTimeout(() => setSpinningIndex((i) => (i === index ? null : i)), 350)
+      if (index < OTP_LENGTH - 1) {
+        otpInputRefs.current[index + 1]?.focus()
+      }
+    }
+  }
+
+  function handleOtpKeyDown(index, e) {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus()
+    }
+  }
+
+  function handleOtpPaste(e) {
+    e.preventDefault()
+    const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH)
+    if (!paste) return
+    const next = Array(OTP_LENGTH).fill('')
+    for (let i = 0; i < paste.length; i++) next[i] = paste[i]
+    setOtpDigits(next)
+    const lastIndex = Math.min(paste.length, OTP_LENGTH) - 1
+    otpInputRefs.current[lastIndex]?.focus()
+  }
+
+  // ---- Auto-verify once all 6 boxes are filled ----
+  useEffect(() => {
+    if (activeView === 'verify-otp' && otpDigits.every((d) => d !== '') && otpStatus === 'idle') {
+      handleVerifyOtp()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpDigits])
+
+  async function handleVerifyOtp() {
+    setOtpStatus('verifying')
+    setOtpError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: regEmail.trim(), otp: otpDigits.join('') }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Invalid code. Please try again.')
+      }
+      setOtpStatus('verified')
+      setTimeout(() => finalizeRegistration(), 1200)
+    } catch (err) {
+      setOtpStatus('error')
+      setOtpError(err.message)
+      triggerOtpShake()
+      setTimeout(() => {
+        setOtpDigits(Array(OTP_LENGTH).fill(''))
+        setOtpStatus('idle')
+        otpInputRefs.current[0]?.focus()
+      }, 600)
+    }
+  }
+
+  // ---- Step 3: OTP verified, actually create the account ----
+  async function finalizeRegistration() {
+    setIsFinalizing(true)
+    setFinalizeError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/register/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: regEmail.trim(),
+          password: regPassword,
+          display_name: `${regFirstName.trim()}_${regLastName.trim()}`,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed.')
+      }
+      sessionStorage.removeItem('pending_registration_email')
+      login(data.data.access, {
+        client_id: data.data.client_id,
+        email: data.data.email,
+        display_name: data.data.display_name,
+      })
+      navigate('/dashboard')
+    } catch (err) {
+      setFinalizeError(err.message)
+    } finally {
+      setIsFinalizing(false)
+    }
+  }
+
+  async function handleResendOtp() {
+    if (resendCooldown > 0 || isResending) return
+    setIsResending(true)
+    setOtpError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/resend-otp/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: regEmail.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Could not resend code.')
+      }
+      setResendCooldown(RESEND_COOLDOWN_SECONDS)
+      setOtpDigits(Array(OTP_LENGTH).fill(''))
+      setOtpStatus('idle')
+      otpInputRefs.current[0]?.focus()
+    } catch (err) {
+      setOtpError(err.message)
+      triggerOtpShake()
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  function handleChangeEmail() {
+    setActiveView('signup')
+    setOtpStatus('idle')
+    setOtpDigits(Array(OTP_LENGTH).fill(''))
+    setOtpError('')
+  }
+
+  const otpBoxesDisabled = otpStatus === 'verifying' || otpStatus === 'verified'
 
   return (
     <div className={containerClass} id="auth-flip-container">
@@ -246,83 +444,184 @@ function AuthPage({ initialView = 'signin' }) {
         </div>
       </div>
 
-      {/* ---------------- SIGN UP ---------------- */}
+      {/* ---------------- SIGN UP / OTP VERIFY ---------------- */}
       <div className="form-panel form-panel-signup">
         <div className="auth-card">
           <div className="auth-logo">
             <img src={AthenaBotLogo} alt="AthenaChat logo" />
           </div>
-          <h1>Create your account</h1>
-          <p className="auth-subtitle">Start deploying your chatbot for free.</p>
 
-          <form onSubmit={handleRegisterSubmit} noValidate>
-            <div className={`form-group ${regEmailError ? 'has-error' : ''} ${regEmailShake ? 'animate-shake' : ''}`}>
-              <label className="form-label" htmlFor="reg-email">Email</label>
-              <input
-                ref={regEmailInputRef}
-                type="email"
-                id="reg-email"
-                placeholder="you@company.com"
-                autoComplete="email"
-                value={regEmail}
-                disabled={isRegisterLoading}
-                onChange={(e) => { setRegEmail(e.target.value); setRegEmailError(false) }}
-                onBlur={() => {
-                  const v = regEmail.trim()
-                  if (v.length > 0) setRegEmailError(!EMAIL_RE.test(v))
-                }}
-              />
-              <p className="form-error">Enter a valid email address.</p>
-            </div>
+          {activeView === 'verify-otp' ? (
+            <>
+              <h1>Verify your email</h1>
+              <p className="otp-sent-to">
+                We sent a 6-digit code to <strong>{maskEmail(regEmail.trim())}</strong>
+              </p>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="reg-password">Password</label>
-              <div className="input-with-action">
-                <input
-                  type={showRegPassword ? 'text' : 'password'}
-                  id="reg-password"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  value={regPassword}
-                  disabled={isRegisterLoading}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  onFocus={() => setRegPasswordFocused(true)}
-                  onBlur={() => { if (regPassword.length === 0) setRegPasswordFocused(false) }}
-                />
-                <button
-                  type="button"
-                  className={`input-action-btn ${showRegPassword ? 'is-active' : ''}`}
-                  aria-label={showRegPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowRegPassword((v) => !v)}
-                >
-                  {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              <div className={`password-feedback-container ${feedbackVisible ? 'is-visible' : ''}`}>
-                <div className="password-strength">
-                  <div className="strength-track">
-                    <div className="strength-fill" style={{ width: `${(score / 5) * 100}%`, backgroundColor: strengthLevel.color }}></div>
+              {otpStatus === 'verified' ? (
+                <div className="otp-verified-panel">
+                  <div className="otp-verified-icon-wrap">
+                    <Lock size={28} />
+                    <span className="otp-check-badge"><Check size={16} /></span>
                   </div>
-                  <span className="strength-label">{strengthLevel.label}</span>
+                  <p className="otp-verified-label">Verified</p>
+                  {isFinalizing && <p className="auth-subtitle">Setting up your account...</p>}
+                  {finalizeError && (
+                    <>
+                      <p className="form-error">{finalizeError}</p>
+                      <button type="button" className="btn btn-primary btn-block" onClick={finalizeRegistration}>
+                        Retry
+                      </button>
+                    </>
+                  )}
                 </div>
-                <ul className="password-requirements">
-                  <li className={`requirement ${checks.length ? 'is-met' : ''}`}>At least 8 characters</li>
-                  <li className={`requirement ${checks.upper ? 'is-met' : ''}`}>One uppercase letter</li>
-                  <li className={`requirement ${checks.lower ? 'is-met' : ''}`}>One lowercase letter</li>
-                  <li className={`requirement ${checks.number ? 'is-met' : ''}`}>One number</li>
-                  <li className={`requirement ${checks.symbol ? 'is-met' : ''}`}>One symbol (!@#$...)</li>
-                </ul>
-              </div>
-            </div>
+              ) : (
+                <>
+                  <div
+                    className={`otp-boxes-row ${otpRowShake ? 'otp-row-shake' : ''}`}
+                    onPaste={handleOtpPaste}
+                  >
+                    {otpDigits.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (otpInputRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        className={`otp-box ${spinningIndex === index ? 'otp-box-spin' : ''} ${otpStatus === 'error' ? 'otp-box-error' : ''}`}
+                        value={digit}
+                        disabled={otpBoxesDisabled}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                      />
+                    ))}
+                  </div>
 
-            {registerApiError && <p className="form-error" style={{ marginBottom: 'var(--space-4)' }}>{registerApiError}</p>}
+                  {otpError && <p className="form-error" style={{ textAlign: 'center' }}>{otpError}</p>}
+                  {otpStatus === 'verifying' && <p className="auth-subtitle" style={{ textAlign: 'center' }}>Verifying...</p>}
 
-            <button type="submit" className={`btn btn-primary btn-block ${isRegisterLoading ? 'is-loading' : ''}`} disabled={isRegisterLoading}>
-              <span className="btn-label">Create account</span>
-              <span className="btn-spinner"></span>
-            </button>
-          </form>
+                  <div className="otp-resend-row">
+                    <span>Didn't get a code?</span>
+                    <button
+                      type="button"
+                      className="otp-resend-btn"
+                      disabled={resendCooldown > 0 || isResending}
+                      onClick={handleResendOtp}
+                    >
+                      {isResending ? 'Sending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                    </button>
+                  </div>
+
+                  <button type="button" className="otp-change-email" onClick={handleChangeEmail}>
+                    Wrong email? Change it
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <h1>Create your account</h1>
+              <p className="auth-subtitle">Start deploying your chatbot for free.</p>
+
+              <form onSubmit={handleRegisterSubmit} noValidate>
+                <div className="form-row-split">
+                  <div className={`form-group ${regFirstNameError ? 'has-error' : ''} ${regFirstNameShake ? 'animate-shake' : ''}`}>
+                    <label className="form-label" htmlFor="reg-first-name">First name</label>
+                    <input
+                      type="text"
+                      id="reg-first-name"
+                      placeholder="Goddess of"
+                      autoComplete="given-name"
+                      value={regFirstName}
+                      disabled={isRegisterLoading}
+                      onChange={(e) => { setRegFirstName(e.target.value); setRegFirstNameError(false) }}
+                    />
+                    <p className="form-error">Required.</p>
+                  </div>
+                  <div className={`form-group ${regLastNameError ? 'has-error' : ''} ${regLastNameShake ? 'animate-shake' : ''}`}>
+                    <label className="form-label" htmlFor="reg-last-name">Last name</label>
+                    <input
+                      type="text"
+                      id="reg-last-name"
+                      placeholder="Wisdom"
+                      autoComplete="family-name"
+                      value={regLastName}
+                      disabled={isRegisterLoading}
+                      onChange={(e) => { setRegLastName(e.target.value); setRegLastNameError(false) }}
+                    />
+                    <p className="form-error">Required.</p>
+                  </div>
+                </div>
+
+                <div className={`form-group ${regEmailError ? 'has-error' : ''} ${regEmailShake ? 'animate-shake' : ''}`}>
+                  <label className="form-label" htmlFor="reg-email">Email</label>
+                  <input
+                    ref={regEmailInputRef}
+                    type="email"
+                    id="reg-email"
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    value={regEmail}
+                    disabled={isRegisterLoading}
+                    onChange={(e) => { setRegEmail(e.target.value); setRegEmailError(false) }}
+                    onBlur={() => {
+                      const v = regEmail.trim()
+                      if (v.length > 0) setRegEmailError(!EMAIL_RE.test(v))
+                    }}
+                  />
+                  <p className="form-error">Enter a valid email address.</p>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="reg-password">Password</label>
+                  <div className="input-with-action">
+                    <input
+                      type={showRegPassword ? 'text' : 'password'}
+                      id="reg-password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      value={regPassword}
+                      disabled={isRegisterLoading}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      onFocus={() => setRegPasswordFocused(true)}
+                      onBlur={() => { if (regPassword.length === 0) setRegPasswordFocused(false) }}
+                    />
+                    <button
+                      type="button"
+                      className={`input-action-btn ${showRegPassword ? 'is-active' : ''}`}
+                      aria-label={showRegPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowRegPassword((v) => !v)}
+                    >
+                      {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+
+                  <div className={`password-feedback-container ${feedbackVisible ? 'is-visible' : ''}`}>
+                    <div className="password-strength">
+                      <div className="strength-track">
+                        <div className="strength-fill" style={{ width: `${(score / 5) * 100}%`, backgroundColor: strengthLevel.color }}></div>
+                      </div>
+                      <span className="strength-label">{strengthLevel.label}</span>
+                    </div>
+                    <ul className="password-requirements">
+                      <li className={`requirement ${checks.length ? 'is-met' : ''}`}>At least 8 characters</li>
+                      <li className={`requirement ${checks.upper ? 'is-met' : ''}`}>One uppercase letter</li>
+                      <li className={`requirement ${checks.lower ? 'is-met' : ''}`}>One lowercase letter</li>
+                      <li className={`requirement ${checks.number ? 'is-met' : ''}`}>One number</li>
+                      <li className={`requirement ${checks.symbol ? 'is-met' : ''}`}>One symbol (!@#$...)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {registerApiError && <p className="form-error" style={{ marginBottom: 'var(--space-4)' }}>{registerApiError}</p>}
+
+                <button type="submit" className={`btn btn-primary btn-block ${isRegisterLoading ? 'is-loading' : ''}`} disabled={isRegisterLoading}>
+                  <span className="btn-label">Create account</span>
+                  <span className="btn-spinner"></span>
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
 
