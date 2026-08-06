@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { ArrowLeft, Monitor, Smartphone, Eye } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjectConfig } from '../hooks/useProjectConfig.js';
 import ConfigSidebar from '../components/projectConfig/ConfigSidebar.jsx';
 import ChatbotPreview from '../components/projectConfig/ChatbotPreview.jsx';
@@ -9,7 +9,7 @@ import LivePreviewWarningModal from '../components/projectConfig/LivePreviewWarn
 export default function ProjectConfigPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
-  const { activeProject } = useOutletContext();
+  const { activeProject, registerUnsavedGuard } = useOutletContext();
 
   const {
     savedConfig,
@@ -87,6 +87,22 @@ export default function ProjectConfigPage() {
     saveConfig();
   }
 
+  useEffect(() => {
+    registerUnsavedGuard(() => hasUnsavedChanges);
+    return () => registerUnsavedGuard(null);
+  }, [hasUnsavedChanges, registerUnsavedGuard]);
+
+  useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   if (isLoading) {
     return <div className="config-page-loading">Loading chatbot configuration...</div>;
   }
@@ -120,6 +136,10 @@ export default function ProjectConfigPage() {
         <button
           className="config-page-back-btn"
           onClick={() => {
+            if (hasUnsavedChanges) {
+              const confirmed = window.confirm('You have unsaved changes. Leave without saving?')
+              if (!confirmed) return
+            }
             if (activeProject?.domain) {
               window.open(`https://${activeProject.domain}`, '_blank', 'noopener,noreferrer');
             }
@@ -128,6 +148,7 @@ export default function ProjectConfigPage() {
         >
           <Eye size={16} /> Preview on Your Site
         </button>
+
       </div>
 
       <div className="config-page-body">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   Search, LayoutDashboard, FolderOpen, FileText, BarChart2,
@@ -35,9 +35,22 @@ function DashboardLayout() {
   const [quickLinksOpen, setQuickLinksOpen] = useState(true)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
+  const unsavedGuardRef = useRef(null)
 
   const isHomeView = !projectId
   const activeProject = projects.find((p) => p.id === projectId)
+
+  function registerUnsavedGuard(fn) {
+    unsavedGuardRef.current = fn
+  }
+
+  function safeNavigate(path) {
+    if (unsavedGuardRef.current && unsavedGuardRef.current()) {
+      const confirmed = window.confirm('You have unsaved changes. Leave without saving?')
+      if (!confirmed) return
+    }
+    navigate(path)
+  }
 
   function authHeaders(extra = {}) {
     return { Authorization: `Bearer ${accessToken}`, ...extra }
@@ -157,7 +170,7 @@ function DashboardLayout() {
 
           <div className="sidebar-scroll-area">
             <nav className="nav-grid">
-              <button type="button" className={`nav-tile ${isHomeView ? 'is-active' : ''}`} onClick={() => navigate('/dashboard')}>
+              <button type="button" className={`nav-tile ${isHomeView ? 'is-active' : ''}`} onClick={() => safeNavigate('/dashboard')}>
                 <LayoutDashboard size={24} />
                 <span>Dashboard</span>
               </button>
@@ -173,7 +186,7 @@ function DashboardLayout() {
               <button
                 type="button"
                 className={`nav-tile ${!isHomeView && !isConfigView ? 'is-active' : ''}`}
-                onClick={() => { if (activeProject) navigate(`/dashboard/projects/${activeProject.id}`) }}
+                onClick={() => { if (activeProject) safeNavigate(`/dashboard/projects/${activeProject.id}`) }}
               >
                 <FileText size={24} />
                 <span>Documents</span>
@@ -182,7 +195,7 @@ function DashboardLayout() {
                 <button
                   type="button"
                   className={`nav-tile ${isConfigView ? 'is-active' : ''}`}
-                  onClick={() => navigate(`/dashboard/projects/${activeProject.id}/config`)}
+                  onClick={() => safeNavigate(`/dashboard/projects/${activeProject.id}/config`)}
                 >
                   <Settings size={24} />
                   <span>Configure</span>
@@ -247,7 +260,7 @@ function DashboardLayout() {
               <div className="header-titles">
                 <div className="breadcrumbs">
                   Home /{' '}
-                  <span style={{ cursor: 'pointer' }} onClick={() => { navigate('/dashboard'); setIsProjectMenuOpen(false) }}>
+                  <span style={{ cursor: 'pointer' }} onClick={() => { safeNavigate('/dashboard'); setIsProjectMenuOpen(false) }}>
                     Dashboard
                   </span>
                   {!isHomeView && (
@@ -262,7 +275,7 @@ function DashboardLayout() {
                   {isProjectMenuOpen && (
                     <div className="profile-menu is-active" style={{ top: '100%', bottom: 'auto', minWidth: '180px' }}>
                       {projects.map((p) => (
-                        <button key={p.id} type="button" onClick={() => { navigate(`/dashboard/projects/${p.id}`); setIsProjectMenuOpen(false) }}>
+                        <button key={p.id} type="button" onClick={() => { safeNavigate(`/dashboard/projects/${p.id}`); setIsProjectMenuOpen(false) }}>
                           {p.name}
                         </button>
                       ))}
@@ -337,6 +350,7 @@ function DashboardLayout() {
             projects, isLoadingProjects, fetchProjects,
             documents, isLoadingDocs, docError, fetchDocuments,
             projectId, activeProject,
+            registerUnsavedGuard,
           }} />
         </div>
       </main>
