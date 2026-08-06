@@ -1,5 +1,5 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Monitor, Smartphone } from 'lucide-react';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import { ArrowLeft, Monitor, Smartphone, Eye } from 'lucide-react';
 import { useState } from 'react';
 import { useProjectConfig } from '../hooks/useProjectConfig.js';
 import ConfigSidebar from '../components/projectConfig/ConfigSidebar.jsx';
@@ -9,6 +9,7 @@ import LivePreviewWarningModal from '../components/projectConfig/LivePreviewWarn
 export default function ProjectConfigPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { activeProject } = useOutletContext();
 
   const {
     savedConfig,
@@ -99,9 +100,6 @@ export default function ProjectConfigPage() {
   return (
     <div className="config-page">
       <div className="config-page-topbar">
-        <div className="config-page-breadcrumb">
-          <span>Home</span> / <span>Project</span> / <span className="active">Chatbot</span>
-        </div>
         <div className="config-page-viewport-toggle">
           <button
             className={viewportMode === 'desktop' ? 'active' : ''}
@@ -118,8 +116,17 @@ export default function ProjectConfigPage() {
             <Smartphone size={16} />
           </button>
         </div>
-        <button className="config-page-back-btn" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} /> Back to Dashboard
+
+        <button
+          className="config-page-back-btn"
+          onClick={() => {
+            if (activeProject?.domain) {
+              window.open(`https://${activeProject.domain}`, '_blank', 'noopener,noreferrer');
+            }
+          }}
+          disabled={!activeProject?.domain}
+        >
+          <Eye size={16} /> Preview on Your Site
         </button>
       </div>
 

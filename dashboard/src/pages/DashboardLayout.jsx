@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Outlet, useParams, useNavigate } from 'react-router-dom'
+import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   Search, LayoutDashboard, FolderOpen, FileText, BarChart2,
   ChevronDown, User, Settings, CreditCard, LogOut,
@@ -18,7 +18,10 @@ function initialsFor(text) {
 }
 
 function DashboardLayout() {
-  const { projectId } = useParams() // undefined when on exactly /dashboard
+  const { projectId } = useParams()
+  const location = useLocation()
+  const isConfigView = location.pathname.endsWith('/config')
+
   const navigate = useNavigate()
   const { accessToken, client, logout } = useAuth()
 
@@ -162,22 +165,23 @@ function DashboardLayout() {
                 <FolderOpen size={24} />
                 <span>Projects</span>
               </button>
+              <button type="button" className="nav-tile">
+                <BarChart2 size={24} />
+                <span>Metrics</span>
+              </button>
+
               <button
                 type="button"
-                className={`nav-tile ${!isHomeView ? 'is-active' : ''}`}
+                className={`nav-tile ${!isHomeView && !isConfigView ? 'is-active' : ''}`}
                 onClick={() => { if (activeProject) navigate(`/dashboard/projects/${activeProject.id}`) }}
               >
                 <FileText size={24} />
                 <span>Documents</span>
               </button>
-              <button type="button" className="nav-tile">
-                <BarChart2 size={24} />
-                <span>Metrics</span>
-              </button>
               {!isHomeView && activeProject && (
                 <button
                   type="button"
-                  className="nav-tile"
+                  className={`nav-tile ${isConfigView ? 'is-active' : ''}`}
                   onClick={() => navigate(`/dashboard/projects/${activeProject.id}/config`)}
                 >
                   <Settings size={24} />
@@ -238,7 +242,7 @@ function DashboardLayout() {
 
       <main className="dashboard-main" id="main-scroll-area">
         <div className="header-bento-wrapper">
-          <header className={`main-header-sticky bento-box ${isHeaderScrolled ? 'is-scrolled' : ''}`}>
+          <header className={`main-header-sticky bento-box ${isHeaderScrolled || isConfigView ? 'is-scrolled' : ''}`}>
             <div className="header-top-bar">
               <div className="header-titles">
                 <div className="breadcrumbs">
@@ -249,11 +253,10 @@ function DashboardLayout() {
                   {!isHomeView && (
                     <>
                       {' / '}
-                      <span style={{ position: 'relative', display: 'inline-block' }}>
-                        <strong style={{ cursor: 'pointer' }} onClick={() => setIsProjectMenuOpen((v) => !v)}>
-                          {activeProject?.name || '...'} <ChevronDown size={12} style={{ display: 'inline' }} />
-                        </strong>
-                      </span>
+                      <strong style={{ cursor: 'pointer' }} onClick={() => setIsProjectMenuOpen((v) => !v)}>
+                        {activeProject?.name || '...'} <ChevronDown size={12} style={{ display: 'inline' }} />
+                      </strong>
+                      {isConfigView && <> / <strong>Chatbot</strong></>}
                     </>
                   )}
                   {isProjectMenuOpen && (

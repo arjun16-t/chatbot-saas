@@ -769,7 +769,6 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 .cp-mode-toggle-bar {
@@ -818,33 +817,31 @@
 
 /* Mock website */
 .cp-mock-site {
-  flex: 1;
   position: relative;
-  overflow-y: auto;
-  background: var(--color-bg);
-  padding: var(--space-6) var(--space-7);
+  width: 100%;
+  max-width: 1100px;
+  min-height: 1200px;
 }
 
 .cp-mock-site-outer {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   justify-content: center;
-  background: var(--color-border);
   padding: var(--space-6) 0;
+  background: var(--color-border);
 }
-.cp-mobile-outer { align-items: flex-start; }
+
+.cp-mock-site-scroll {
+  padding: var(--space-6) var(--space-7);
+}
 
 .cp-mock-site.cp-mobile-frame {
-  width: 375px;
+  max-width: 375px;
   height: 667px;
   border-radius: 28px;
   border: 8px solid var(--color-text-primary);
-  overflow: hidden;
-  position: relative;
-  padding: 0;
-  flex: none;
 }
+
+.cp-mobile-outer { align-items: flex-start; }
 
 .cp-mobile-site-placeholder {
   display: flex;
@@ -978,14 +975,15 @@
 .cp-widget-window {
   position: absolute;
   bottom: 90px;
-  width: 340px;
-  height: 480px;
+  width: 380px;
+  height: 560px;   /* was: height: min(480px, calc(100% - 130px)); */
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(17, 17, 17, 0.2);
+  box-shadow: 0 8px 30px rgba(17,17,17,0.2);
   display: flex;
   flex-direction: column;
 }
+
 .cp-widget-window.cp-right { right: var(--space-6); }
 .cp-widget-window.cp-left { left: var(--space-6); }
 
@@ -1094,16 +1092,24 @@
 .cp-icon-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
 .config-page {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
+}
+
+.config-page-body {
+  display: flex;
 }
 
 .config-page-topbar {
+  position: sticky;
+  top: 96px;
+  z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-6);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -1151,12 +1157,6 @@
   cursor: pointer;
 }
 
-.config-page-body {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
 .config-page-loading, .config-page-error {
   display: flex;
   align-items: center;
@@ -1170,4 +1170,16 @@
   display: flex;
   justify-content: flex-end;
   margin-bottom: var(--space-4);
+}
+
+.dashboard-main.no-scroll-main {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-main.no-scroll-main .dashboard-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
 }

@@ -18,6 +18,12 @@ const HARDCODED_QA = [
  * Renders a mock website with the chatbot widget mimicked on top,
  * matching widget.js's real visual output.
  *
+ * The website content scrolls in its own inner container
+ * (.cp-mock-site-scroll) so the widget, positioned absolutely
+ * against the outer fixed-height frame (.cp-mock-site), always
+ * stays anchored to the visible corner regardless of how far the
+ * mock website content scrolls.
+ *
  * Two modes:
  *   - Static (default): hardcoded conversation, styled live from
  *     whatever `config` is passed (updates instantly as sidebar edits happen)
@@ -45,7 +51,10 @@ export default function ChatbotPreview({
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesEndRef.current?.closest('.cp-widget-messages');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [liveMessages, isThinking]);
 
   if (!config) return null;
@@ -97,63 +106,67 @@ export default function ChatbotPreview({
 
       <div className={`cp-mock-site-outer ${isMobile ? 'cp-mobile-outer' : ''}`}>
         <div className={`cp-mock-site ${isMobile ? 'cp-mobile-frame' : ''}`}>
-          {!isMobile && (
-            <>
-              <div className="cp-mock-nav">
-                <span className="cp-mock-logo">DemoSite</span>
-                <div className="cp-mock-nav-links">
-                  <span>Home</span>
-                  <span>Features</span>
-                  <span>Pricing</span>
-                  <span>About</span>
-                  <span>Contact</span>
-                </div>
-                <button className="cp-mock-cta">Get Started</button>
-              </div>
 
-              <div className="cp-mock-hero">
-                <div className="cp-mock-hero-text">
-                  <h1>Welcome to DemoSite</h1>
-                  <p>
-                    This is a dummy website used to preview your chatbot in action. Experience a
-                    clean and modern design.
-                  </p>
-                  <button className="cp-mock-learn-more">Learn More</button>
-                </div>
-                <div className="cp-mock-hero-image" />
-              </div>
-
-              <div className="cp-mock-features">
-                <h2>Our Features</h2>
-                <div className="cp-mock-feature-cards">
-                  <div className="cp-mock-card">
-                    <div className="cp-mock-card-icon" />
-                    <h3>Fast Performance</h3>
-                    <p>Optimized for speed and seamless experience.</p>
+          {/* Scrollable website content — widget below is a sibling, NOT inside this */}
+          <div className="cp-mock-site-scroll">
+            {!isMobile && (
+              <>
+                <div className="cp-mock-nav">
+                  <span className="cp-mock-logo">DemoSite</span>
+                  <div className="cp-mock-nav-links">
+                    <span>Home</span>
+                    <span>Features</span>
+                    <span>Pricing</span>
+                    <span>About</span>
+                    <span>Contact</span>
                   </div>
-                  <div className="cp-mock-card">
-                    <div className="cp-mock-card-icon" />
-                    <h3>Secure Platform</h3>
-                    <p>Built with security and privacy in mind.</p>
+                  <button className="cp-mock-cta">Get Started</button>
+                </div>
+
+                <div className="cp-mock-hero">
+                  <div className="cp-mock-hero-text">
+                    <h1>Welcome to DemoSite</h1>
+                    <p>
+                      This is a dummy website used to preview your chatbot in action. Experience a
+                      clean and modern design.
+                    </p>
+                    <button className="cp-mock-learn-more">Learn More</button>
                   </div>
-                  <div className="cp-mock-card">
-                    <div className="cp-mock-card-icon" />
-                    <h3>Easy Integration</h3>
-                    <p>Integrate effortlessly with your existing tools.</p>
+                  <div className="cp-mock-hero-image" />
+                </div>
+
+                <div className="cp-mock-features">
+                  <h2>Our Features</h2>
+                  <div className="cp-mock-feature-cards">
+                    <div className="cp-mock-card">
+                      <div className="cp-mock-card-icon" />
+                      <h3>Fast Performance</h3>
+                      <p>Optimized for speed and seamless experience.</p>
+                    </div>
+                    <div className="cp-mock-card">
+                      <div className="cp-mock-card-icon" />
+                      <h3>Secure Platform</h3>
+                      <p>Built with security and privacy in mind.</p>
+                    </div>
+                    <div className="cp-mock-card">
+                      <div className="cp-mock-card-icon" />
+                      <h3>Easy Integration</h3>
+                      <p>Integrate effortlessly with your existing tools.</p>
+                    </div>
                   </div>
                 </div>
+              </>
+            )}
+
+            {isMobile && (
+              <div className="cp-mobile-site-placeholder">
+                <span>DemoSite</span>
+                <p>Mobile view — chatbot opens full screen</p>
               </div>
-            </>
-          )}
+            )}
+          </div>
 
-          {isMobile && (
-            <div className="cp-mobile-site-placeholder">
-              <span>DemoSite</span>
-              <p>Mobile view — chatbot opens full screen</p>
-            </div>
-          )}
-
-          {/* ── Widget mimic ── */}
+          {/* ── Widget mimic — anchored to cp-mock-site, unaffected by content scroll ── */}
           <div
             className={`cp-widget-window cp-open ${
               isMobile ? 'cp-mobile-fullscreen' : `cp-${positionSide}`
