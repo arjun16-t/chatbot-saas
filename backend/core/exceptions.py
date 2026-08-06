@@ -8,29 +8,26 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+def extract_message(detail):
+    """
+    Produces a human-readable message from DRF's varying error-detail
+    shapes: a plain string, a list of strings, or a dict of
+    field -> list[str] (the standard ValidationError shape).
+    """
+    if isinstance(detail, str):
+        return detail
+    if isinstance(detail, list) and detail:
+        return extract_message(detail[0])
+    if isinstance(detail, dict) and detail:
+        first_key = next(iter(detail))
+        first_msg = extract_message(detail[first_key])
+        if first_key == "non_field_errors":
+            return first_msg
+        return f"{first_key}: {first_msg}"
+    return "Request failed"
+
+
 def custom_exception_handler(exc, context):
-    """
-    Wrap DRF's default exception handler to enforce a consistent
-    error response envelope across the entire API:
-        {"success": False, "error": "<human-readable message>"}
-
-    Falls back to DRF's default response for the actual status code
-    and detail extraction, then reshapes the body. Unhandled
-    (non-DRF) exceptions are not caught here -- they still propagate
-    to Django's normal 500 handling in development but not prodcution
-    since masking unexpected server errors as if they were handled
-    API errors hides real bugs.
-
-    Args:
-        exc: the raised exception instance.
-        context: dict with 'view', 'request', 'args', 'kwargs' --
-            provided by DRF's view machinery.
-
-    Returns:
-        Response | None: reshaped Response if DRF's default handler
-        recognized the exception, else None (lets it propagate).
-    """
-    
     response = exception_handler(exc, context)
 
     request = context.get("request")
@@ -44,21 +41,22 @@ def custom_exception_handler(exc, context):
         if settings.DEBUG:
             return None
         return Response(
-            {
-                "success": False,
-                "message": "Something went wrong. Please try again later.",
-                "code": "internal_error",
-                "errors": None,
-            },
+            {"success": False, "message": "Something went wrong. Please try again later.",
+             "code": "internal_error", "errors": None},
             status=500,
         )
-    
-    original_detail = response.data.get("detail", response.data) if isinstance(response.data, dict) else response.data
 
-    if isinstance(exc, (ChatbotUnavailable, IngestionFail)):
+    if isinstance(response.data, dict) and "detail" in response.data:
+        original_detail = response.data["detail"]
+    else:
+        original_detail = response.data
+
+    message = extract_message(original_detail)
+
+    if isinstance(exc, (ChatbotUnavailable, IngestionFail, DeletionFail)):
         response.data = {
             "success": False,
-            "message": str(original_detail) if isinstance(original_detail, str) else "Request failed",
+            "message": message,
             "code": getattr(exc, "default_code", "error"),
             "errors": response.data,
         }
@@ -71,11 +69,10 @@ def custom_exception_handler(exc, context):
                 "user": request.user.id if request and request.user.is_authenticated else None,
             },
         )
-    
     else:
         response.data = {
             "success": False,
-            "message": str(original_detail) if not isinstance(original_detail, (dict, list)) else "Request failed",
+            "message": message,
             "code": getattr(exc, "default_code", "error"),
             "errors": response.data,
         }
@@ -103,3 +100,12 @@ class IngestionFail(APIException):
     status_code = 503
     default_detail = 'Insufficient storage on disk or unable to store'
     default_code = 'ingestion_fail'
+
+class DeletionFail(APIException):
+    """
+    Used for when a document's Qdrant vectors or filesystem file
+    cannot be successfully removed during perform_destroy().
+    """
+    status_code = 503
+    default_detail = 'Unable to delete document. Please try again later.'
+    default_code = 'deletion_fail'

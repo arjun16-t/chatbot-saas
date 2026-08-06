@@ -186,24 +186,13 @@ class ResendOTPView(APIView):
 
 class RegisterClientView(APIView):
     """
-    Public endpoint for business client registration.
-    Creates a new Client account and returns a one-time API key.
-    The raw API key is shown exactly once and never stored — client
-    must save it immediately.
+    POST /api/auth/register/
+    Body: {email, password, display_name (optional)}
+    Requires a verified, unexpired OTPVerification row for this email.
     """
     permission_classes = [AllowAny]
 
     def post(self, request) -> Response:
-        """
-        Handles POST /api/auth/register/
-        
-        Args:
-            request: DRF request object containing email, password, subscription_plan.
-        
-        Returns:
-            201 with client_id, email and api_key on success.
-            400 with validation errors on failure.
-        """
         email = request.data.get("email", "").strip()
 
         try:
@@ -240,7 +229,8 @@ class RegisterClientView(APIView):
                 "data": {
                     "access": str(refresh.access_token),
                     "client_id": str(client.id),
-                    "email": client.email
+                    "email": client.email,
+                    "display_name": client.display_name,
                 }
             },
             status=status.HTTP_201_CREATED
@@ -284,7 +274,8 @@ class LoginClientView(TokenObtainPairView):
                 "data": {
                     "access": str(serializer.validated_data.get("access")),
                     "client_id": str(client.id),
-                    "email": client.email
+                    "email": client.email,
+                    "display_name": client.display_name,
                 }
             },
             status=status.HTTP_200_OK

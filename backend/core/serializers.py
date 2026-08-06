@@ -22,7 +22,11 @@ class ClientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ['email', 'password']
+        fields = ['email', 'password', 'display_name']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'display_name': {'required': False},
+        }
 
     def validate_password(self, value: str) -> str:
         """
@@ -63,7 +67,12 @@ class ClientSerializer(serializers.ModelSerializer):
         """
         password = validated_data.pop('password')
         email = validated_data.pop('email')
-        client = Client.objects.create_user(email=email, password=password, **validated_data)
+        display_name = validated_data.get('display_name', '')
+        client = Client.objects.create_user(
+            email=email,
+            password=password,
+            display_name=display_name,
+            **validated_data)
         return client
     
 class CustomTokenSerializer(TokenObtainPairSerializer):

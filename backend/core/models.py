@@ -77,6 +77,7 @@ class Client(AbstractUser, BaseModel):
         verbose_name="client_id"
     )
     username = None
+    display_name = models.CharField(max_length=50, blank=True, default='')
     email = models.EmailField(unique=True)
     subscription_plan = models.CharField(
         max_length=7,

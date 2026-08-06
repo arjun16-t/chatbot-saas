@@ -12,6 +12,8 @@ from .models import Document
 from .serializers import DocumentSerializer
 from .tasks import ingest_document_task, delete_document_task
 
+from core.exceptions import DeletionFail
+
 from rag.ingest import generate_doc_id
 from rag.utils.qdrant import get_qdrant_client, remove_points
 
@@ -218,3 +220,4 @@ class DocumentRetrieveDestroyView(RetrieveDestroyAPIView):
             delete_document_task.delay(instance.doc_id)
         except OperationalError:
             logger.warning('Failed to enqueue deletion task for doc_id=%s', instance.doc_id)
+            raise DeletionFail()

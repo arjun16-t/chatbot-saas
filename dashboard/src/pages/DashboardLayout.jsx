@@ -145,7 +145,7 @@ function DashboardLayout() {
 
   const hour = new Date().getHours()
   const timeOfDay = hour >= 5 && hour < 12 ? 'Morning' : hour >= 12 && hour < 17 ? 'Afternoon' : 'Evening'
-  const displayName = client?.email ? client.email.split('@')[0] : 'there'
+  const displayName = client?.display_name || (client?.email ? client.email.split('@')[0] : 'A')
 
   async function handleLogout() {
     await logout()
@@ -247,7 +247,7 @@ function DashboardLayout() {
             )}
           </div>
 
-          <button type="button" className="btn btn-secondary btn-icon-only logout-btn" aria-label="Log out" onClick={handleLogout}>
+          <button type="button" className="btn btn-secondary btn-icon-only logout-btn" aria-label="Log out" title="Log out" onClick={handleLogout}>
             <LogOut size={20} />
           </button>
         </div>
