@@ -1,9 +1,15 @@
 from django.contrib import admin
 from django.urls import path, include
-from core.urls import auth_patterns, project_patterns, widget_patterns
-
 from django.conf import settings
 from django.conf.urls.static import static
+
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView
+)
+
+from core.urls import auth_patterns, project_patterns, widget_patterns
 
 # Add url versioning for apis
 
@@ -14,6 +20,10 @@ urlpatterns = [
     path('api/widget/', include(widget_patterns)),
     path('api/', include('chatbot.urls')),
     path('api/', include('documents.urls')),
+
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
 
 if settings.DEBUG:
