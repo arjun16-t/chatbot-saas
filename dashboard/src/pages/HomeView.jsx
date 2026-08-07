@@ -11,7 +11,7 @@ function HomeView() {
   const [isWizardOpen, setIsWizardOpen] = useState(false)
 
   useEffect(() => {
-    if (location.state?.justRegistered) {
+    if (location.state?.justRegistered || location.state?.openWizard) {
       setIsWizardOpen(true)
       navigate(location.pathname, { replace: true, state: {} })
     }

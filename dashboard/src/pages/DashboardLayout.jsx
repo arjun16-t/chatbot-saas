@@ -44,12 +44,12 @@ function DashboardLayout() {
     unsavedGuardRef.current = fn
   }
 
-  function safeNavigate(path) {
+  function safeNavigate(path, options) {
     if (unsavedGuardRef.current && unsavedGuardRef.current()) {
       const confirmed = window.confirm('You have unsaved changes. Leave without saving?')
       if (!confirmed) return
     }
-    navigate(path)
+    navigate(path, options)
   }
 
   function authHeaders(extra = {}) {
@@ -174,9 +174,9 @@ function DashboardLayout() {
                 <LayoutDashboard size={24} />
                 <span>Dashboard</span>
               </button>
-              <button type="button" className="nav-tile" onClick={() => setIsProjectMenuOpen((v) => !v)}>
+              <button type="button" className="nav-tile" onClick={() => safeNavigate('/dashboard', { state: { openWizard: true } })}>
                 <FolderOpen size={24} />
-                <span>Projects</span>
+                <span>New Project</span>
               </button>
               <button type="button" className="nav-tile">
                 <BarChart2 size={24} />
