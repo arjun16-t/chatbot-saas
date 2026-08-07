@@ -346,7 +346,7 @@ function AuthPage({ initialView = 'signin' }) {
         email: data.data.email,
         display_name: data.data.display_name,
       })
-      navigate('/dashboard')
+      navigate('/dashboard', { state: { justRegistered: true } })
     } catch (err) {
       setFinalizeError(err.message)
     } finally {

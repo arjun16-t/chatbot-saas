@@ -83,6 +83,7 @@ def create_and_send_otp(email: str) -> "OTPVerification":
         otp=otp,
         expires_at = timezone.now() + timedelta(minutes=10)
     )
+    logger.debug(f"OTP is: {otp}")
     send_otp_email(email, otp)
 
     return row

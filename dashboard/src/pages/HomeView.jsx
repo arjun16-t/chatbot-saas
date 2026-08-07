@@ -1,40 +1,33 @@
-import { useOutletContext, useNavigate } from 'react-router-dom'
+import { useOutletContext, useNavigate, useLocation } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { useAuth } from '../AuthContext.jsx'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import { useState, useEffect } from 'react'
+import ProjectWizardModal from '../components/projectWizard/ProjectWizardModal.jsx'
 
 function HomeView() {
   const { projects, isLoadingProjects, fetchProjects } = useOutletContext()
-  const { accessToken } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
-  async function handleCreateProject() {
-    const name = window.prompt('Project name?')
-    if (!name) return
-    const domain = window.prompt('Project domain (e.g. example.com)?')
-    if (!domain) return
-    try {
-      const res = await fetch(`${API_BASE}/api/projects/`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, domain }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        await fetchProjects()
-        navigate(`/dashboard/projects/${data.data.id}`)
-      }
-    } catch (err) {
-      console.error('Project creation failed', err)
+  const [isWizardOpen, setIsWizardOpen] = useState(false)
+
+  useEffect(() => {
+    if (location.state?.justRegistered) {
+      setIsWizardOpen(true)
+      navigate(location.pathname, { replace: true, state: {} })
     }
+  }, [location.state, location.pathname, navigate])
+
+  async function handleWizardCreated(project) {
+    setIsWizardOpen(false)
+    await fetchProjects()
+    navigate(`/dashboard/projects/${project.id}`)
   }
 
   return (
     <section className="ledger-section bento-box">
       <div className="section-header">
         <h3>Your Projects</h3>
-        <button type="button" className="btn btn-primary btn-sm" onClick={handleCreateProject}>
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => setIsWizardOpen(true)}>
           <Plus size={16} /> New Project
         </button>
       </div>
@@ -57,6 +50,13 @@ function HomeView() {
           </div>
         ))}
       </div>
+
+      {isWizardOpen && (
+        <ProjectWizardModal
+          onClose={() => setIsWizardOpen(false)}
+          onCreated={handleWizardCreated}
+        />
+      )}
     </section>
   )
 }
