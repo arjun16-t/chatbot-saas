@@ -1,0 +1,415 @@
+.mp-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.mp-loading {
+  padding: var(--space-7);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+/* ---- Header card ----
+   Same visual tokens as .card (border/radius/shadow/padding) but
+   deliberately NOT reusing .card directly -- .card includes a
+   hover-lift animation meant for clickable tiles, which doesn't
+   suit this static summary block. */
+.mp-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.mp-header-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.mp-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mp-identity-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mp-identity-title h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mp-identity-meta {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.mp-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mp-meta-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.mp-meta-value {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+/* .mp-id-chip stacks on top of .mono -- .mono only sets font/size,
+   this adds the clickable-chip container look on top of it. */
+.mp-id-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.mp-id-chip:hover {
+  border-color: var(--color-accent-primary);
+}
+
+/* ---- Status panel (uses existing .badge/.badge-dot for the pills
+   themselves -- this only lays out the two rows next to each other) ---- */
+.mp-status-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--color-border);
+}
+
+.mp-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  font-size: var(--text-sm);
+}
+
+.mp-status-label {
+  color: var(--color-text-secondary);
+}
+
+/* ---- Tabs ---- */
+.mp-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mp-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.mp-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.mp-tab.is-active {
+  color: var(--color-accent-primary);
+  border-bottom-color: var(--color-accent-primary);
+}
+
+.mp-tab-content {
+  padding-top: var(--space-1);
+}
+
+/* ---- Overview tab ---- */
+.mp-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.mp-details-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6);
+}
+
+.mp-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.mp-details-header h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mp-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.mp-icon-btn:hover {
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+.mp-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+}
+
+.mp-details-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mp-details-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mp-details-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.mp-spin {
+  animation: mp-spin 0.7s linear infinite;
+}
+
+@keyframes mp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Document stats ---- */
+.mp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+.mp-stat-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.mp-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  color: var(--color-accent-primary);
+  flex-shrink: 0;
+}
+
+.mp-stat-number {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mp-stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ---- Settings tab ---- */
+.mp-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.mp-action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.mp-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  color: var(--color-accent-primary);
+  flex-shrink: 0;
+}
+
+.mp-action-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-action-text h4 {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.mp-action-text p {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.mp-settings-error {
+  margin: 0;
+}
+
+/* ---- One-time key reveal banner ---- */
+.mp-key-reveal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-accent-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  flex-wrap: wrap;
+}
+
+.mp-key-reveal-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.mp-key-reveal-text strong {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+
+.mp-key-reveal-text p {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.mp-key-reveal .mp-id-chip {
+  max-width: 320px;
+}
+
+.mp-key-reveal .mp-id-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Widget tab (placeholder, no backend yet) ---- */
+.mp-widget-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.mp-widget-placeholder-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg);
+  color: var(--color-accent-primary);
+}
+
+.mp-widget-placeholder h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+}
+
+.mp-widget-placeholder p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  max-width: 360px;
+}
