@@ -3,7 +3,7 @@ import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   Search, LayoutDashboard, FolderOpen, FileText, BarChart2,
   ChevronDown, User, Settings, CreditCard, LogOut,
-  Calendar, Bell, Plus, FileWarning, Folder,
+  Calendar, Bell, Plus, FileWarning, Folder, ShieldCheck,
 } from 'lucide-react'
 
 import { useAuth } from '../AuthContext.jsx'
@@ -21,6 +21,7 @@ function DashboardLayout() {
   const { projectId } = useParams()
   const location = useLocation()
   const isConfigView = location.pathname.endsWith('/config')
+  const isManageView = location.pathname.endsWith('/manage')
 
   const navigate = useNavigate()
   const { accessToken, client, logout } = useAuth()
@@ -185,7 +186,7 @@ function DashboardLayout() {
 
               <button
                 type="button"
-                className={`nav-tile ${!isHomeView && !isConfigView ? 'is-active' : ''}`}
+                className={`nav-tile ${!isHomeView && !isConfigView && !isManageView ? 'is-active' : ''}`}
                 onClick={() => { if (activeProject) safeNavigate(`/dashboard/projects/${activeProject.id}`) }}
               >
                 <FileText size={24} />
@@ -198,7 +199,17 @@ function DashboardLayout() {
                   onClick={() => safeNavigate(`/dashboard/projects/${activeProject.id}/config`)}
                 >
                   <Settings size={24} />
-                  <span>Configure</span>
+                  <span>Configure Chatbot</span>
+                </button>
+              )}
+              {!isHomeView && activeProject && (
+                <button
+                  type="button"
+                  className={`nav-tile ${isManageView ? 'is-active' : ''}`}
+                  onClick={() => safeNavigate(`/dashboard/projects/${activeProject.id}/manage`)}
+                >
+                  <ShieldCheck size={24} />
+                  <span>Manage Project</span>
                 </button>
               )}
 
@@ -255,7 +266,7 @@ function DashboardLayout() {
 
       <main className="dashboard-main" id="main-scroll-area">
         <div className="header-bento-wrapper">
-          <header className={`main-header-sticky bento-box ${isHeaderScrolled || isConfigView ? 'is-scrolled' : ''}`}>
+          <header className={`main-header-sticky bento-box ${isHeaderScrolled || isConfigView || isManageView ? 'is-scrolled' : ''}`}>
             <div className="header-top-bar">
               <div className="header-titles">
                 <div className="breadcrumbs">
@@ -270,6 +281,7 @@ function DashboardLayout() {
                         {activeProject?.name || '...'} <ChevronDown size={12} style={{ display: 'inline' }} />
                       </strong>
                       {isConfigView && <> / <strong>Chatbot</strong></>}
+                      {isManageView && <> / <strong>Manage Project</strong></>}
                     </>
                   )}
                   {isProjectMenuOpen && (
@@ -294,7 +306,16 @@ function DashboardLayout() {
               <div className="header-actions">
                 <button type="button" className="btn btn-secondary btn-icon-only"><Calendar size={20} /></button>
                 <button type="button" className="btn btn-secondary btn-icon-only"><Bell size={20} /></button>
-                <button type="button" className="btn btn-secondary btn-icon-only"><Settings size={20} /></button>
+                {!isHomeView && activeProject && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-icon-only"
+                    title="Manage Project"
+                    onClick={() => safeNavigate(`/dashboard/projects/${activeProject.id}/manage`)}
+                  >
+                    <Settings size={20} />
+                  </button>
+                )}
               </div>
             </div>
 
