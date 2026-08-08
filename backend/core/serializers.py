@@ -12,6 +12,7 @@ import re
 from .models import Client, Project, default_widget_theme
 
 HEX_COLOR_RE = re.compile(r'^#[0-9A-Fa-f]{6}$')
+LOCAL_HOSTS = {'localhost', '127.0.0.1'}
 
 class ClientSerializer(serializers.ModelSerializer):
     """
@@ -131,26 +132,23 @@ class ProjectSerializer(serializers.ModelSerializer):
         project._raw_api_key = api_key
         return project
 
+
     def validate_domain(self, value: str) -> str:
-        """
-        Normalizes and validates the domain field.
-
-        Args:
-            value: raw domain string from the request.
-
-        Returns:
-            Normalized domain string.
-
-        Raises:
-            serializers.ValidationError: if the value doesn't resemble
-                a valid domain after normalization.
-        """
         if '://' not in value:
             value = "https://" + value
-        
         parsed = urlparse(value)
-        url = parsed.netloc
-        return url.strip().lower()
+        netloc = parsed.netloc.strip().lower()
+
+        host = netloc.split(':')[0]
+        if host in LOCAL_HOSTS:
+            return netloc
+
+        if '.' not in host:
+            raise serializers.ValidationError(
+                "Enter a valid domain (e.g. example.com) or 'localhost'."
+            )
+
+        return netloc
 
 class ProjectThemeConfigSerializer(serializers.ModelSerializer):
     """
@@ -221,4 +219,15 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         if '://' not in value:
             value = "https://" + value
         parsed = urlparse(value)
-        return parsed.netloc.strip().lower()
+        netloc = parsed.netloc.strip().lower()
+
+        host = netloc.split(':')[0]
+        if host in LOCAL_HOSTS:
+            return netloc
+
+        if '.' not in host:
+            raise serializers.ValidationError(
+                "Enter a valid domain (e.g. example.com) or 'localhost'."
+            )
+
+        return netloc

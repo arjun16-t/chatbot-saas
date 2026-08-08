@@ -320,6 +320,64 @@ def remove_points(
         
         raise RuntimeError(f"Failed to delete points for doc_id '{doc_id}': {e}") from e
 
+def delete_project(
+    client: QdrantClient,
+    project_id: str,
+    client_id: str
+) -> None:
+    """
+    Removes all points belonging to a specific project.
+
+    Used when a project is deleted — all documents and their
+    associated chunks/points are removed from Qdrant.
+
+    Args:
+        client (QdrantClient): Active Qdrant client instance.
+        project_id (str): UUID Project identifier whose points should be removed.
+        client_id (str): UUID Client identifier to scope the deletion.
+
+    Returns:
+        None
+
+    Raises:
+        RuntimeError: If deletion fails.
+    """
+    try:
+        client.delete(
+            collection_name=QDRANT_COLLECTION_NAME,
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="client_id",
+                            match=MatchValue(value=client_id)
+                        ),
+                        FieldCondition(
+                            key="project_id",
+                            match=MatchValue(value=project_id)
+                        ),
+                    ],
+                )
+            ),
+        )
+
+        if DEBUG:
+            print(
+                f"{Colors.BLUE} Successfully deleted all points "
+                f"for project: {project_id} {Colors.END}"
+            )
+
+    except Exception as e:
+        if DEBUG:
+            print(
+                f"{Colors.RED} Failed to delete points "
+                f"for project: {project_id} {Colors.END}"
+            )
+
+        raise RuntimeError(
+            f"Failed to delete points for project_id '{project_id}': {e}"
+        ) from e
+
 
 def query_collection(
     client: QdrantClient,

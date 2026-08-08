@@ -48,7 +48,7 @@ class ProjectAPIKeyAuthentication(authentication.BaseAuthentication):
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         try:
             project = Project.objects.select_related('client').get(
-                api_key_hash=key_hash, is_active=True
+                api_key_hash=key_hash, is_active=True, is_deleted=False
             )
         except Project.DoesNotExist:
             self._record_invalid_attempt(invalid_key_bucket)

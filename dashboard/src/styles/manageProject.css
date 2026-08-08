@@ -17,14 +17,20 @@
    suit this static summary block. */
 .mp-header-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-6);
+  flex-direction: column;
+  gap: var(--space-5);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-6);
+}
+
+.mp-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-6);
   flex-wrap: wrap;
 }
 
@@ -126,6 +132,32 @@
 }
 
 .mp-status-label {
+  color: var(--color-text-secondary);
+}
+
+/* ---- Embed snippet preview (masked, header card) ---- */
+.mp-embed-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.mp-embed-code {
+  display: block;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.mp-embed-hint {
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
 }
 
@@ -316,6 +348,15 @@
   flex-shrink: 0;
 }
 
+/* Delete row -- visually distinct as the one truly destructive action */
+.mp-action-row-danger {
+  border-color: rgba(181, 72, 52, 0.3);
+}
+
+.mp-action-icon-danger {
+  color: var(--color-status-error);
+}
+
 .mp-action-text {
   flex: 1;
   min-width: 0;
@@ -368,6 +409,13 @@
   color: var(--color-text-secondary);
 }
 
+.mp-key-reveal-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-basis: 100%;
+}
+
 .mp-key-reveal .mp-id-chip {
   max-width: 320px;
 }
@@ -375,6 +423,33 @@
 .mp-key-reveal .mp-id-chip span {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-snippet-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  max-width: 100%;
+  transition: border-color var(--transition-fast);
+}
+
+.mp-snippet-box:hover {
+  border-color: var(--color-accent-primary);
+}
+
+.mp-snippet-box code {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-primary);
+  overflow-x: auto;
   white-space: nowrap;
 }
 

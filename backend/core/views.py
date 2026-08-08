@@ -13,7 +13,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from django.db import transaction, IntegrityError
 from django.db.models import Count
-from django.shortcuts import get_object_or_404
 from django.core.validators import EmailValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
 
@@ -32,10 +31,11 @@ from .serializers import (
 )
 from .permissions import ProjectDomainPermission
 from .authentication import ProjectAPIKeyAuthentication
+from .tasks import delete_project_task
 
 from utils.logger import get_logger
 from utils.token_obtain import set_refresh_cookie
-from utils.client_project import get_client_project
+from utils.client_project import get_client_project, get_owned_project
 from utils.otp import create_and_send_otp
 
 logger = get_logger(__name__)
@@ -382,7 +382,11 @@ class ProjectListCreateView(ListCreateAPIView):
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
-        return Project.objects.filter(client=self.request.user).annotate(
+        return Project.objects.filter(
+            client=self.request.user,
+        ).exclude(
+            is_deleted=True
+        ).annotate(
             document_count=Count('documents')
         )
 
@@ -471,7 +475,7 @@ class ProjectRotateKeyView(APIView):
     revoke again if that wasn't intended.
     """
     def post(self, request, pk):
-        project = get_object_or_404(Project, client=request.user, pk=pk)
+        project = get_owned_project(request, pk)
 
 
         new_api_key = "ac_" + secrets.token_urlsafe(32)
@@ -505,7 +509,7 @@ class ProjectRevokeView(APIView):
     Row and history are preserved.
     """
     def patch(self, request, pk):
-        project = get_object_or_404(Project, client=request.user, pk=pk)
+        project = get_owned_project(request, pk)
 
         project.is_active = False
         project.save(update_fields=['is_active'])
@@ -547,7 +551,7 @@ class ProjectDetailUpdateView(APIView):
     api_key_hash -- that remains rotate/revoke-only.
     """
     def patch(self, request, pk):
-        project = get_object_or_404(Project, client=request.user, pk=pk)
+        project = get_owned_project(request, pk)
 
         serializer = ProjectDetailSerializer(project, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -560,4 +564,25 @@ class ProjectDetailUpdateView(APIView):
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
+        )
+
+class ProjectDeleteView(APIView):
+    """
+    DELETE /api/projects/<uuid:pk>/
+    Immediately hides the project (is_active=False, is_deleted=True)
+    and enqueues async cleanup. Client sees it gone right away;
+    Qdrant/file/row cleanup happens in the background.
+    """
+    def delete(self, request, pk):
+        project = get_owned_project(request, pk)
+        with transaction.atomic():
+            project.is_active = False
+            project.is_deleted = True
+            project.save(update_fields=['is_active', 'is_deleted'])
+
+        delete_project_task.delay(str(project.id), str(project.client_id))
+
+        return Response(
+            {"success": True, "message": "Project deletion started", "data": None},
+            status=status.HTTP_202_ACCEPTED
         )

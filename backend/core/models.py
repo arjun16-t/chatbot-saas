@@ -211,6 +211,8 @@ class Project(BaseModel, ProjectTheme):
     is_active = models.BooleanField(default=True)
     widget_enabled = models.BooleanField(default=True)
 
+    is_deleted = models.BooleanField(default=False)
+
     # Authentication
     api_key_hash = models.CharField(max_length=64, editable=False, unique=True)
     api_key_last_used = models.DateTimeField(null=True)

@@ -10,8 +10,8 @@ import '../styles/manageProject.css'
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
-  { id: 'settings', label: 'Settings', icon: SlidersHorizontal },
   { id: 'widget', label: 'Widget', icon: Puzzle },
+  { id: 'settings', label: 'Settings', icon: SlidersHorizontal },
 ]
 
 function ManageProjectPage() {
