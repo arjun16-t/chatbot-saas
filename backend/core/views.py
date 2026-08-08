@@ -23,7 +23,13 @@ from datetime import timedelta
 from django.utils import timezone
 
 from .models import Project, Client, OTPVerification
-from .serializers import ClientSerializer, ProjectSerializer, CustomTokenSerializer, ProjectThemeConfigSerializer
+from .serializers import (
+    ClientSerializer,
+    ProjectSerializer,
+    CustomTokenSerializer,
+    ProjectThemeConfigSerializer,
+    ProjectDetailSerializer,
+)
 from .permissions import ProjectDomainPermission
 from .authentication import ProjectAPIKeyAuthentication
 
@@ -531,3 +537,27 @@ class WidgetConfigView(APIView):
         project = request.auth
         serializer = ProjectThemeConfigSerializer(project, context={'request': request})
         return Response(serializer.data)
+
+class ProjectDetailUpdateView(APIView):
+    """
+    PATCH /api/projects/<uuid:pk>/details/
+
+    Updates a project's name, domain, and/or widget_enabled flag.
+    Ownership-scoped via client=request.user. Does not touch
+    api_key_hash -- that remains rotate/revoke-only.
+    """
+    def patch(self, request, pk):
+        project = get_object_or_404(Project, client=request.user, pk=pk)
+
+        serializer = ProjectDetailSerializer(project, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        return Response(
+            {
+                "success": True,
+                "message": "Project updated successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )

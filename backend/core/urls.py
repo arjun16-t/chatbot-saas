@@ -12,6 +12,7 @@ from .views import (
     ProjectConfigView,
     ProjectRotateKeyView,
     ProjectRevokeView,
+    ProjectDetailUpdateView
 )
 
 auth_patterns = [
@@ -33,5 +34,7 @@ project_patterns = [
     path('<uuid:project_id>/config/', ProjectConfigView.as_view(), name='config_project'),
     path('<uuid:pk>/rotate/', ProjectRotateKeyView.as_view(), name='rotate_key_project'),
     path('<uuid:pk>/revoke/', ProjectRevokeView.as_view(), name='revoke_key_project'),
+    path('<uuid:pk>/details/', ProjectDetailUpdateView.as_view(), name='update_project_details'),
+    
     path('<uuid:project_id>/', include('documents.urls')),
 ]

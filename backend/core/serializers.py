@@ -207,3 +207,18 @@ class ProjectThemeConfigSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f'{key} - Not a Hex Code', code="theme_keys_value_error")
 
         return self.instance.theme_color | value
+
+class ProjectDetailSerializer(serializers.ModelSerializer):
+    """
+    PATCH-only serializer for project name/domain/widget_enabled.
+    Reuses ProjectSerializer's validate_domain normalization logic.
+    """
+    class Meta:
+        model = Project
+        fields = ['name', 'domain', 'widget_enabled', 'is_active']
+
+    def validate_domain(self, value: str) -> str:
+        if '://' not in value:
+            value = "https://" + value
+        parsed = urlparse(value)
+        return parsed.netloc.strip().lower()

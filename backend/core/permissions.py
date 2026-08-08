@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from rest_framework.request import Request
 
 from urllib.parse import urlparse
 
@@ -6,7 +7,9 @@ from .models import Project
 
 class ProjectDomainPermission(BasePermission):
     """
-    Validates that a project-key-authenticated request's Origin or
+    Validates that a project-key-authenticated requesor if
+            the request's Origin/Referer matches the Project's
+            registered domain. t's Origin or
     Referer header matches the domain registered on the Project
     that authenticated it (request.auth).
 
@@ -48,3 +51,29 @@ class ProjectDomainPermission(BasePermission):
             value = 'https://' + value
         parsed = urlparse(value)
         return parsed.netloc.strip().lower()
+
+class WidgetEnabledPermission(BasePermission):
+    """
+    Validates that a project-key-authenticated request's widget
+    is enabled or not.
+    """
+
+    message = 'Unable to access chatbot as it is disabled'
+
+    def has_permission(self, request: Request, view) -> bool:
+        """
+        Args:
+            request: incoming DRF Request, post-authentication.
+            view: the view being accessed.
+        
+        Returns:
+            bool: True if the widget is enabled, 
+            False otherwise (DRF returns 403).
+        """
+        project = getattr(request, 'auth', None)
+        if not isinstance(project, Project):
+            return True
+        
+        widget_enabled = project.widget_enabled
+        
+        return widget_enabled

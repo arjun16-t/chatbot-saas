@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from core.exceptions import ChatbotUnavailable
-from core.permissions import ProjectDomainPermission
+from core.permissions import ProjectDomainPermission, WidgetEnabledPermission
 from core.authentication import ProjectAPIKeyAuthentication
 from core.throttling import ClientProjectThrottle
 from core.models import Project
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 class ChatView(APIView):
     authentication_classes = [JWTAuthentication, ProjectAPIKeyAuthentication]
-    permission_classes = [IsAuthenticated, ProjectDomainPermission]
+    permission_classes = [IsAuthenticated, ProjectDomainPermission, WidgetEnabledPermission]
     throttle_classes = [ClientProjectThrottle]
 
     def post(self, request) -> Response:
