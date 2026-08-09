@@ -6,6 +6,7 @@ import WizardStep1Details from './WizardStep1Details.jsx'
 import WizardStep2Chatbot from './WizardStep2Chatbot.jsx'
 import WizardStep3Review from './WizardStep3Review.jsx'
 import WizardStep4Success from './WizardStep4Success.jsx'
+import "../../styles/wizard.css"
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 

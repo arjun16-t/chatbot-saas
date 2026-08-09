@@ -1,5 +1,6 @@
 from pathlib import Path
 from decouple import AutoConfig, Csv
+from corsheaders.defaults import default_headers
 
 import sys
 
@@ -199,6 +200,9 @@ CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv())
 # Allows cookies/auth headers to be sent cross-origin (needed for dashboard later)
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-api-key',
+]
 
 # ==============================================================================
 # INTERNATIONALIZATION
