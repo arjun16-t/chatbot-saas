@@ -9,10 +9,12 @@ from .views import (
     ResendOTPView,
     WidgetConfigView,
     ProjectListCreateView,
+    CheckDomainAvailabilityView,
     ProjectConfigView,
     ProjectRotateKeyView,
     ProjectRevokeView,
-    ProjectDetailUpdateView
+    ProjectDetailUpdateView,
+    ProjectDeleteView
 )
 
 auth_patterns = [
@@ -31,10 +33,12 @@ widget_patterns = [
 
 project_patterns = [
     path('', ProjectListCreateView.as_view(), name='list_create_project'),
+    path('check-domain/', CheckDomainAvailabilityView.as_view(), name='check_domain'),
     path('<uuid:project_id>/config/', ProjectConfigView.as_view(), name='config_project'),
     path('<uuid:pk>/rotate/', ProjectRotateKeyView.as_view(), name='rotate_key_project'),
     path('<uuid:pk>/revoke/', ProjectRevokeView.as_view(), name='revoke_key_project'),
     path('<uuid:pk>/details/', ProjectDetailUpdateView.as_view(), name='update_project_details'),
+    path('<uuid:pk>/', ProjectDeleteView.as_view(), name='delete_project'),
     
     path('<uuid:project_id>/', include('documents.urls')),
 ]

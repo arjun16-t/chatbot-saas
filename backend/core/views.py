@@ -15,11 +15,12 @@ from django.db import transaction, IntegrityError
 from django.db.models import Count
 from django.core.validators import EmailValidator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 
 import secrets
 import hashlib
+from urllib.parse import urlparse
 from datetime import timedelta
-from django.utils import timezone
 
 from .models import Project, Client, OTPVerification
 from .serializers import (
@@ -384,8 +385,7 @@ class ProjectListCreateView(ListCreateAPIView):
     def get_queryset(self):
         return Project.objects.filter(
             client=self.request.user,
-        ).exclude(
-            is_deleted=True
+            is_deleted=False
         ).annotate(
             document_count=Count('documents')
         )
@@ -397,9 +397,9 @@ class ProjectListCreateView(ListCreateAPIView):
         try:
             with transaction.atomic():
                 project = serializer.save(client=request.user)
-        except IntegrityError:
+        except IntegrityError as e:
             raise ValidationError(
-                {"domain": "A project with this domain already exists for your account."}
+                {"domain": f"A project with this domain already exists for your account. {e}"}
             )
 
         logger.info(f'New Project created: {project.name} for Client: {str(project.client_id)}')
@@ -417,6 +417,42 @@ class ProjectListCreateView(ListCreateAPIView):
                 }
             },
             status=status.HTTP_201_CREATED
+        )
+
+class CheckDomainAvailabilityView(APIView):
+    """
+    GET /api/projects/check-domain/?domain=
+
+    Inline-validation helper for the project creation wizard's
+    Step 1 -- returns whether a domain is free for this client to
+    use in a new project.
+    """
+    def get(self, request):
+        raw = request.query_params.get('domain', '')
+        if not raw.strip():
+            raise ValidationError({"domain": "Domain is required."})
+
+        value = raw.strip()
+        if '://' not in value:
+            value = "https://" + value
+        parsed = urlparse(value)
+        normalized = parsed.netloc.strip().lower()
+
+        host = normalized.split(':')[0]
+        if host not in {'localhost', '127.0.0.1'} and '.' not in host:
+            raise ValidationError({"domain": "Enter a valid domain (e.g. example.com) or 'localhost'."})
+
+        is_taken = Project.objects.filter(
+            client=request.user, domain=normalized, is_deleted=False
+        ).exists()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Domain checked",
+                "data": {"domain": normalized, "available": not is_taken},
+            },
+            status=status.HTTP_200_OK,
         )
 
 class ProjectConfigView(APIView):
@@ -443,7 +479,6 @@ class ProjectConfigView(APIView):
             PermissionDenied: API-key path, key's project doesn't match URL project_id
         """
         if isinstance(request.auth, Project):
-             # API-key path: request.auth IS the authenticated project
             if str(request.auth.id) != str(project_id):
                 raise PermissionDenied("This API key does not belong to the requested project.")
             return request.auth

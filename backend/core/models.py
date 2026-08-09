@@ -7,7 +7,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
-
+from django.db.models import Q
 
 SUBSCRIPTION_PLANS = [
     ('free', 'Free'),
@@ -227,7 +227,8 @@ class Project(BaseModel, ProjectTheme):
         constraints = [
             models.UniqueConstraint(
                 fields=["client", "domain"],
-                name="unique_domain_per_project",
+                condition=Q(is_deleted=False),
+                name="unique_domain_per_client_active",
             )
         ]
 

@@ -1,4 +1,4 @@
-import { Lock, Globe, LayoutGrid, Pencil } from 'lucide-react'
+import { Lock, Globe, LayoutGrid, Pencil, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 
 const USE_CASE_OPTIONS = [
   { value: 'customer_support', label: 'Customer Support' },
@@ -11,13 +11,33 @@ const USE_CASE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ]
 
+function DomainAvailabilityHint({ status }) {
+  if (status === 'checking') {
+    return <p className="wizard-field-hint-status"><Loader2 size={12} className="wizard-spin" /> Checking availability…</p>
+  }
+  if (status === 'available') {
+    return <p className="wizard-field-hint-status is-available"><CheckCircle2 size={12} /> Domain is available</p>
+  }
+  if (status === 'taken') {
+    return <p className="wizard-field-hint-status is-taken"><XCircle size={12} /> Already used by another one of your projects</p>
+  }
+  // 'idle' or 'error' -- say nothing rather than show a misleading status
+  return null
+}
+
 /**
  * Step 1: project name, domain, and an optional, frontend-only
  * use case selector (never sent to the backend).
+ *
+ * domainError is a validation message string (or falsy) -- blocks
+ * "Next" when present. domainAvailability is a separate, non-blocking
+ * hint from the debounced check-domain lookup -- informational only,
+ * since the real authoritative check still happens at Create.
  */
 export default function WizardStep1Details({
   name, setName, nameError,
   domain, setDomain, domainError,
+  domainAvailability,
   useCase, setUseCase,
   otherUseCase, setOtherUseCase,
 }) {
@@ -53,7 +73,8 @@ export default function WizardStep1Details({
             onChange={(e) => setDomain(e.target.value)}
           />
         </div>
-        {domainError && <p className="wizard-field-error">Domain is required.</p>}
+        {domainError && <p className="wizard-field-error">{domainError}</p>}
+        {!domainError && <DomainAvailabilityHint status={domainAvailability} />}
       </div>
 
       <div className="wizard-field">
