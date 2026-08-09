@@ -1,8 +1,6 @@
 from django.db import models
 from core.models import BaseModel, Project
 
-from rag.config import QUERYING_MODEL
-
 class UnansweredQuery(BaseModel):
     project = models.ForeignKey(
         Project,

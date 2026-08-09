@@ -15,7 +15,7 @@ const TABS = [
 ]
 
 function ManageProjectPage() {
-  const { activeProject, documents, fetchProjects } = useOutletContext()
+  const { activeProject, documents, fetchProjects, projectId } = useOutletContext()
   const [activeTab, setActiveTab] = useState('overview')
 
   if (!activeProject) {
@@ -47,7 +47,7 @@ function ManageProjectPage() {
         {activeTab === 'settings' && (
           <SettingsTab project={activeProject} onProjectUpdated={fetchProjects} />
         )}
-        {activeTab === 'widget' && <WidgetTab />}
+        {activeTab === 'widget' && <WidgetTab projectId={projectId} />}
       </div>
     </div>
   )

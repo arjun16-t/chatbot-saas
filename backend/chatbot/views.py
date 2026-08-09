@@ -1,7 +1,9 @@
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -11,9 +13,10 @@ from core.permissions import ProjectDomainPermission, WidgetEnabledPermission
 from core.authentication import ProjectAPIKeyAuthentication
 from core.throttling import ClientProjectThrottle
 from core.models import Project
+from core.mixins import EnvelopeResponseMixin
 
 from .models import UnansweredQuery
-from .serializers import QuerySerializer
+from .serializers import QuerySerializer, UnansweredQuerySerializer
 
 from rag.query import query as query_rag
 from utils.logger import get_logger
@@ -34,13 +37,14 @@ class ChatView(APIView):
         client_id = str(request.user.id)
 
         if isinstance(request.auth, Project):
-            project_id = str(request.auth.id)
+            project = request.auth
         else:
             project_id_param = request.data.get('project_id')
             if not project_id_param:
                 raise ValidationError({"project_id": "This field is required for dashboard/JWT queries."})
             project = get_client_project(request, project_id_param)
-            project_id = str(project.id)
+
+        project_id = str(project.id)
 
         try:
             result = query_rag(question, client_id, project_id)
@@ -57,7 +61,7 @@ class ChatView(APIView):
 
         if result['status'] == 'unanswered':
             UnansweredQuery.objects.create(
-                client=request.user,
+                project=request.auth,
                 query=result['query']
             )
             logger.info(f"Unanswered Query: {result['query']} Saved!")
@@ -78,4 +82,48 @@ class ChatView(APIView):
                 "message": "Query processed successfully",
                 "data": response
             }, status=status.HTTP_200_OK
+        )
+
+class UnansweredPagination(PageNumberPagination):
+    page_size = 20
+
+class UnansweredListView(EnvelopeResponseMixin, ListAPIView):
+    serializer_class = UnansweredQuerySerializer
+    pagination_class = UnansweredPagination
+    success_message = "Unanswered Queries fetched successfully."
+
+    def get_queryset(self):
+        project = get_client_project(self.request, self.kwargs.get("project_id"))
+        queryset = UnansweredQuery.objects.filter(
+            project=project
+        )
+        
+        is_resolved_filter = self.request.query_params.get('is_resolved')
+        if is_resolved_filter:
+            queryset = queryset.filter(is_resolved=is_resolved_filter)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        return response
+
+class UnansweredRetrieveUpdateDestroyView(EnvelopeResponseMixin, RetrieveUpdateDestroyAPIView):
+    serializer_class = UnansweredQuerySerializer
+    lookup_url_kwarg = 'id'
+    success_message = "Unanswered Query Updated Successfully."
+
+    def get_queryset(self):
+        project = get_client_project(self.request, self.kwargs.get("project_id"))
+        queryset = UnansweredQuery.objects.filter(
+            project=project
+        )
+        return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {"success": True, "message": "Unanswered query deleted successfully", "data": None},
+            status=status.HTTP_200_OK,
         )

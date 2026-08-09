@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 
-from .models import OTPVerification, Project
+from .models import OTPVerification
 from documents.models import Document
 
 from utils.logger import get_logger
@@ -32,6 +32,7 @@ def delete_project_task(project_id, client_id):
         project_id: UUID string of the project being deleted.
         client_id: UUID string of the owning client (for Qdrant filter).
     """
+    from core.models import Project
     try:
         delete_project_vectors(
             client=get_qdrant_client(),

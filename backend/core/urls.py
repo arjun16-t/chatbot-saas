@@ -1,4 +1,6 @@
 from django.urls import path, include
+from chatbot.urls import querypatterns
+
 from .views import (
     RegisterClientView,
     LoginClientView,
@@ -41,4 +43,5 @@ project_patterns = [
     path('<uuid:pk>/', ProjectDeleteView.as_view(), name='delete_project'),
     
     path('<uuid:project_id>/', include('documents.urls')),
+    path('<uuid:project_id>/', include(querypatterns)),
 ]

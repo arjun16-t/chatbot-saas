@@ -255,3 +255,18 @@ class OTPVerification(BaseModel):
         self.is_verified = True
         self.save()
         return True, "OTP verified successfully."
+
+# from rag.config import QUERYING_MODEL
+
+# class ChatbotConfig(BaseModel):
+#     # AI Configuration - Available only for Pro User
+#     system_prompt = models.TextField(blank=True)
+#     model_name = models.CharField(default=QUERYING_MODEL)
+#     temperature = models.FloatField(default=0.2)
+#     max_tokens = models.IntegerField(default=1000)
+
+#     # Chat Settings
+#     welcome_message = models.TextField(blank=True)
+#     fallback_message = models.TextField(blank=True)
+#     collect_feedback = models.BooleanField(default=True)
+#     human_handoff = models.BooleanField(default=False)
