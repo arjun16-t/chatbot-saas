@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChatView, UnansweredListView, UnansweredRetrieveUpdateDestroyView
+from .views import ChatView, UnansweredListView, UnansweredRetrieveUpdateDestroyView, UnansweredBulkActionView
 
 urlpatterns = [
     path('chat/', ChatView.as_view(), name='chat'),
@@ -7,5 +7,6 @@ urlpatterns = [
 
 querypatterns = [
     path('unanswered/', UnansweredListView.as_view(), name='unanswered_query'),
-    path('unanswered/<int:id>/', UnansweredRetrieveUpdateDestroyView.as_view(), name='unanswered_retrieve_update_delete')
+    path('unanswered/<int:id>/', UnansweredRetrieveUpdateDestroyView.as_view(), name='unanswered_retrieve_update_delete'),
+    path('unanswered/bulk/', UnansweredBulkActionView.as_view(), name='unanswered_bulk_action'),
 ]

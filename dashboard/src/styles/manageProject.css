@@ -580,3 +580,43 @@
   gap: var(--space-3);
   padding-top: var(--space-2);
 }
+
+/* ---- Widget tab: bulk toolbar + table selection ---- */
+.mp-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-accent-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mp-bulk-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.mp-checkbox-col {
+  width: 40px;
+}
+
+/* base.css applies border/padding/width:100% to every <input> --
+   this resets a checkbox back to its native, undistorted size. */
+.mp-row-checkbox {
+  width: auto;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.mp-query-cell {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

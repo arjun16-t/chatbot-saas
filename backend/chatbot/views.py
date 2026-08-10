@@ -127,3 +127,40 @@ class UnansweredRetrieveUpdateDestroyView(EnvelopeResponseMixin, RetrieveUpdateD
             {"success": True, "message": "Unanswered query deleted successfully", "data": None},
             status=status.HTTP_200_OK,
         )
+
+class UnansweredBulkActionView(APIView):
+    """
+    POST /api/projects/<uuid:project_id>/unanswered/bulk/
+    Bulk-resolves, bulk-unresolves, or bulk-deletes a set of
+    UnansweredQuery rows for a single project. Single DB write
+    regardless of selection size -- same pattern as
+    sweep_deleted_documents / delete_project_task.
+
+    Body: {"ids": [1, 2, 3], "action": "delete" | "resolve" | "unresolve"}
+    """
+    def post(self, request, project_id):
+        project = get_client_project(request, project_id)
+
+        ids = request.data.get('ids')
+        action = request.data.get('action')
+
+        if not isinstance(ids, list) or not ids:
+            raise ValidationError({"ids": "Provide a non-empty list of query IDs."})
+        if action not in {'delete', 'resolve', 'unresolve'}:
+            raise ValidationError({"action": "action must be one of: delete, resolve, unresolve."})
+
+        queryset = UnansweredQuery.objects.filter(project=project, id__in=ids)
+
+        if action == 'delete':
+            affected, _ = queryset.delete()
+        else:
+            affected = queryset.update(is_resolved=(action == 'resolve'))
+
+        return Response(
+            {
+                "success": True,
+                "message": f"{affected} quer{'y' if affected == 1 else 'ies'} updated",
+                "data": {"affected": affected},
+            },
+            status=status.HTTP_200_OK,
+        )
