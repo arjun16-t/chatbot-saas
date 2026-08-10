@@ -2,208 +2,172 @@
   <img alt="AthenaChat Logo" src="assets/AthenaBot.png" width="350px">
 </p>
 
-# 🤖 AthenaChat — RAG-Powered Chatbot as a Service
+# AthenaChat
 
-> Embed an AI assistant trained on your own documents into any website in minutes.
+**RAG-powered chatbot-as-a-service.** Businesses upload their documents, paste one script tag, and get an AI chatbot on their site that answers only from their own content.
 
----
-
-## 📌 Overview
-
-AthenaChat lets businesses add a smart, context-aware chatbot to their website by pasting a single script tag. The chatbot is powered by Retrieval-Augmented Generation (RAG) — it answers questions strictly from the business's own documents (FAQs, product info, service details), not general internet knowledge.
-
-Every client's documents and conversations are fully isolated from every other client's, enforced at the data layer rather than just in application logic.
+> 🚧 Actively developed, pre-launch. Live demo link coming soon after deployment.
 
 ---
 
-## ✨ Features
+## What it does
 
-**Live today:**
-- 🔐 JWT-based client authentication with hashed, one-time-shown API keys
-- 📄 Document upload with validation, deduplication, and automatic re-indexing on updates
-- 🔍 Hybrid RAG retrieval (dense + sparse embeddings) for grounded, accurate answers
-- 🛡️ Multi-tenant isolation enforced at the vector-store query layer, not just the API layer
-- 🧠 Prompt-injection detection on incoming questions before they reach the LLM
-- 📋 Unresolved-query tracking, so clients can see what their chatbot couldn't answer
-
-**Planned:**
-- 🌐 One-line embed widget (`<script>` tag) for any website
-- 📊 Client dashboard for document management and analytics
-- ⚡ Async ingestion via Celery, plus rate limiting
-- 🚀 Freemium model with usage-based limits
+1. A business signs up and creates a project (one project per domain/site)
+2. They upload their documents — FAQs, product docs, service details
+3. AthenaChat chunks, embeds, and indexes them in a multi-tenant vector store
+4. They paste one `<script>` tag on their site
+5. Visitors chat with a bot that answers strictly from that business's own documents
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
-```
-Client Website
-     │
- [Script Tag]
-     │
- JS Widget (chat bubble)
-     │
- Django REST API  ──── JWT Auth
-     │
- RAG Pipeline (rag/)
- ┌───┴────────┐
-Qdrant       Groq LLM
-(hybrid       (Llama 3.3
- search,       70B)
- client-
- filtered)
-     │
- PostgreSQL
-(clients, documents, unresolved queries)
+```mermaid
+flowchart TD
+    A["Client apps<br/>Widget + React dashboard"] -->|HTTPS request| B["Django REST API"]
+    B --> C{"Request type"}
+
+    C -->|"Chat query"| D["Auth: JWT or<br/>Project API key"]
+    D --> E["RAG query pipeline"]
+    E --> F["Qdrant<br/>Hybrid vector search"]
+    E --> G["Groq LLM<br/>Llama 3.3 70B"]
+    F --> H["Answer + sources"]
+    G --> H
+    H --> A
+
+    C -->|"Document upload"| I["Document row created<br/>status: received"]
+    I --> J["Celery worker<br/>ingest_document_task"]
+    J --> K["Chunk + embed<br/>dense + sparse"]
+    K --> F
+    J --> L["Document row updated<br/>status: created"]
+
+    M["Redis<br/>broker + rate limits"] -.-> B
+    M -.-> J
 ```
 
-The RAG pipeline (`rag/`) is a standalone Python package, independent of Django, so it can be reused across other Athena products. The Django backend imports it directly rather than duplicating any retrieval or ingestion logic.
+Every chat/document request is also gated by a three-layer rate-limiting stack before it reaches application code:
+
+```mermaid
+flowchart TD
+    A["Incoming request"] --> B{"Layer 1: IP middleware<br/>Redis, per client IP"}
+    B -->|"over limit"| BR["429"]
+    B -->|"under limit"| C{"Layer 2: DRF throttle<br/>per client / per project"}
+    C -->|"over limit"| CR["429"]
+    C -->|"under limit"| D{"API key valid?"}
+    D -->|"invalid"| E{"Layer 3: invalid-key throttle<br/>per IP, before DB lookup"}
+    E -->|"over limit"| ER["429"]
+    E -->|"under limit"| DR["401"]
+    D -->|"valid, or JWT"| F["View handler"]
+```
 
 ---
 
-## 🧰 Tech Stack
+## Key design decisions
+
+- **Hybrid retrieval** — dense embeddings (Jina) + SPLADE sparse vectors, fused with Reciprocal Rank Fusion, so search understands both meaning and exact keyword matches
+- **Multi-tenant isolation, verified not assumed** — every vector, document, and query is scoped by `client_id` *and* `project_id`; a leaked widget API key can only ever reach one project's documents, not a client's whole account
+- **Async by default** — document ingestion and cleanup run on Celery workers with an explicit status state machine (`received → processing → created/failed`), designed to survive crashed tasks without orphaning data or vectors
+- **API keys designed for public exposure** — a project's widget key lives in a public `<script>` tag by necessity. Security comes from domain validation, layered rate limiting, and fast revocation/rotation — not secrecy
+- **Soft-delete everywhere destructive** — documents and projects are marked `deleting`/`deleted` before any external cleanup runs, so a crashed background task leaves a durable, inspectable trail instead of silent data loss
+
+---
+
+## Tech stack
 
 | Layer | Technology |
-|-------|-----------|
-| Backend | Django + Django REST Framework |
-| Auth | JWT (`djangorestframework-simplejwt`) |
-| Vector DB | Qdrant — hybrid dense + sparse search, payload-filtered per client |
-| Dense Embeddings | `jina-embeddings-v5-text-nano` |
-| Sparse Embeddings | FastEmbed SPLADE |
-| LLM Inference | Groq API (Llama 3.3 70B) |
+|---|---|
+| Backend API | Django + Django REST Framework |
+| Auth | `djangorestframework-simplejwt` (JWT) + per-project API keys |
+| Async tasks | Celery + Redis (broker, rate limiting, result backend) |
+| Scheduling | `django-celery-beat` (DB-backed periodic tasks) |
+| Vector DB | Qdrant (hybrid dense + sparse search, multi-tenant payload filtering) |
+| Dense embeddings | `jina-embeddings-v5-text-nano` |
+| Sparse embeddings | FastEmbed SPLADE |
+| LLM inference | Groq API (Llama 3.3 70B) |
+| Dashboard | React (Vite, plain JS) + `react-colorful` + GSAP |
+| Embeddable widget | Vanilla JS, Shadow DOM–isolated, no build step |
 | Relational DB | PostgreSQL |
-| Task Queue | Celery + Redis *(planned)* |
-| Frontend Widget | Vanilla JS *(planned)* |
-| Deployment | Railway / Render |
 
 ---
 
-## 📁 Project Structure
+## Project structure
 
 ```
 chatbot-saas/
-├── assets/                # images and media
-├── rag/                   # standalone RAG pipeline, importable as a package
-│   ├── ingest.py           # validate → dedupe → extract → chunk → embed → store
-│   ├── query.py             # embed → hybrid search → prompt → Groq → answer
+├── backend/                 # Django project
+│   ├── config/               # Settings, urls, celery app
+│   ├── core/                 # Client auth, Project model, API keys, middleware
+│   ├── chatbot/               # Chat endpoint, RAG wiring
+│   └── documents/             # Upload, Celery ingestion tasks, deletion sweep
+├── dashboard/                # React dashboard (Vite)
+│   └── src/
+├── widget/                   # Embeddable chat widget (vanilla JS)
+│   ├── widget.js
+│   └── widget.css
+├── rag/                      # Standalone RAG pipeline (Django-agnostic, reusable)
+│   ├── ingest.py
+│   ├── query.py
 │   ├── config.py
-│   ├── test_docs/
 │   └── utils/
-├── backend/                # Django project
-│   ├── core/                # Client model, JWT auth (register/login/refresh)
-│   ├── chatbot/              # Chat API, unresolved-query tracking
-│   ├── documents/            # Document upload + ingestion API
-│   ├── utils/                 # shared logging
-│   └── config/                 # settings, URLs
-├── widget/                 # embeddable JS chat bubble (planned)
-├── dashboard/               # client-facing React dashboard (planned)
-├── docs/                    # architecture notes
-├── .env.example
-└── README.md
+├── docs/
+└── requirements.txt
 ```
+
+`rag/` is deliberately decoupled from Django — it's importable as a standalone package by any other project.
 
 ---
 
-## 🚀 Getting Started (Local Setup)
+## Getting started
 
-> ⚠️ Still in active development — expect rough edges.
+**Prerequisites:** Python 3.11+, Node 20+, Docker (for Qdrant + Redis), PostgreSQL, a Groq API key.
 
-### Prerequisites
-- Python 3.10+
-- Docker (for Qdrant)
-- PostgreSQL
-
-### 1. Clone the repo
 ```bash
+# clone
 git clone https://github.com/arjun16-t/chatbot-saas.git
 cd chatbot-saas
-```
 
-### 2. Set up environment
-A single `.env` file at the project root is shared by both the `rag/` pipeline and the Django backend:
-```bash
-cp .env.example .env
-# fill in your API keys and database credentials
-```
-
-### 3. Start Qdrant locally
-```bash
-docker run -p 6333:6333 qdrant/qdrant
-```
-
-### 4. Set up PostgreSQL
-Create a database matching the `DB_NAME` in your `.env`.
-
-### 5. Install dependencies and run migrations
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+# backend
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env   # fill in DB, Redis, Qdrant, and Groq credentials
 
+# start Qdrant + Redis
+docker run -p 6333:6333 qdrant/qdrant
+docker run -p 6379:6379 redis
+
+cd backend
 python manage.py migrate
-```
-
-### 6. Run the Django backend
-```bash
 python manage.py runserver
+
+# in a separate terminal — Celery worker
+celery -A config worker --loglevel=info --concurrency=1
+
+# in a separate terminal — Celery beat (scheduled cleanup tasks)
+celery -A config beat --loglevel=info
+
+# frontend
+cd ../dashboard
+npm install
+npm run dev
 ```
 
-### 7. Try the API
-```bash
-# Register a client
-curl -X POST http://127.0.0.1:8000/api/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"email": "you@example.com", "password": "yourpassword"}'
-
-# Log in to get a JWT
-curl -X POST http://127.0.0.1:8000/api/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"email": "you@example.com", "password": "yourpassword"}'
-
-# Upload a document (use the access token from login)
-curl -X POST http://127.0.0.1:8000/api/documents/upload/ \
-  -H "Authorization: Bearer <access_token>" \
-  -F "file_raw=@your_document.pdf"
-
-# Ask a question
-curl -X POST http://127.0.0.1:8000/api/chat/ \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What does this document say about X?"}'
-```
-
-### Running just the RAG pipeline (without Django)
-For experimenting with retrieval logic in isolation:
-```bash
-cd rag
-python -c "from ingest import ingest; print(ingest('test_docs/sebi.pdf', 'test_client'))"
-python -c "from query import query; print(query('your question', 'test_client'))"
-```
+> Update `.env.example` with your own variable names before publishing — this section assumes standard Django/Celery/Qdrant env conventions.
 
 ---
 
-## 🗺️ Roadmap
+## Status & roadmap
 
-- [x] Standalone RAG pipeline — hybrid retrieval, chunking, deduplication
-- [x] Django REST API with JWT auth and multi-tenant isolation
-- [x] Document upload and ingestion endpoint
-- [x] Chat endpoint with unresolved-query tracking
-- [x] Project-wise API endpoints per client
-- [ ] Async document processing (Celery + Redis)
-- [ ] API rate limiting
-- [ ] Document management endpoints (list, retrieve, delete)
-- [ ] Client dashboard (React)
-- [ ] Embeddable JS widget
-- [ ] Production deployment
-- [ ] First clients
+| Done | In progress / planned |
+|---|---|
+| Multi-tenant RAG pipeline, hybrid search | Bring-your-own-Groq-key for free tier |
+| Full auth: JWT + per-project API keys | Production deployment (Railway/Render) |
+| Async document ingestion + cleanup | Subscription plans & usage metering |
+| Embeddable widget with Shadow DOM isolation | API documentation pass |
+| Dashboard: projects, documents, live theme preview | Switch embedding model to an Apache 2.0 license before commercial launch |
+| Three-layer rate limiting | File encryption at rest (on S3 migration) |
 
 ---
 
-## 📄 License
 
-Apache License 2.0 — see [LICENSE](LICENSE) for details.
-
----
-
-> Built by [Arjun](https://github.com/arjun16-t) · Open to feedback and contributions
+## License
+<a href="LICENSE">Apache License 2.0
