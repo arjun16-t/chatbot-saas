@@ -5,7 +5,6 @@ import { useAuth } from '../../AuthContext.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const HARDCODED_QA = [
-  { sender: 'bot', text: 'Hi there! 👋 How can I help you today?', time: '10:30 AM' },
   { sender: 'user', text: 'Tell me how RAG works.', time: '10:31 AM' },
   {
     sender: 'bot',
@@ -29,6 +28,12 @@ const HARDCODED_QA = [
  *     whatever `config` is passed (updates instantly as sidebar edits happen)
  *   - Live: real input, real /api/chat/ calls against the saved config
  *     (styling frozen until Save, per design)
+ *
+ * Both modes now prepend a real greeting row built from
+ * config.greeting_message -- matching widget.js's actual behavior,
+ * where the greeting is the first bot message shown on open. This
+ * is rendered directly from config, never routed through a real
+ * /api/chat/ call in either mode.
  *
  * Props:
  *   config: theme_color, logo_url, bot_display_name, greeting_message, bubble_position
@@ -93,7 +98,14 @@ export default function ChatbotPreview({
       .finally(() => setIsThinking(false));
   }
 
-  const displayMessages = isLiveMode ? liveMessages : HARDCODED_QA;
+  // The greeting is client-side/config-only, exactly like widget.js --
+  // never routed through handleSend()/fetch. Prepended fresh here so
+  // both modes actually reflect config.greeting_message, which they
+  // previously ignored entirely.
+  const greetingRow = { sender: 'bot', text: config.greeting_message, time: '10:30 AM' };
+  const displayMessages = isLiveMode
+    ? [greetingRow, ...liveMessages]
+    : [greetingRow, ...HARDCODED_QA];
 
   return (
     <div className="cp-wrapper">
