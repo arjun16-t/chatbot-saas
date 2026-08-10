@@ -50,6 +50,13 @@
 
   // ── Styles ───────────────────────────────────────────────────────
   const WIDGET_STYLES = `
+    /* Loaded here, inside the shadow root's own stylesheet, so the
+       widget renders correctly regardless of whether the host page
+       has ever loaded Inter itself -- shadow DOM isolation means a
+       host page's own <link> to Google Fonts does NOT guarantee
+       availability inside this shadow tree. */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
 
     .ac-bubble {
@@ -61,12 +68,12 @@
     .ac-bubble:hover { transform: scale(1.05); }
     .ac-bubble svg { width: 28px; height: 28px; color: #fff; }
     .ac-bubble img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
-    .ac-bubble.ac-hidden { display: none; }
 
     .ac-window {
       display: none;
       flex-direction: column;
-      width: 360px; height: 560px;
+      width: min(320px, 90vw);
+      height: min(440px, 65vh);
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 8px 30px rgba(0,0,0,0.2);
@@ -362,7 +369,7 @@
       '    </button>' +
       '  </div>' +
       '</div>' +
-      '<button class="ac-bubble" aria-label="Open chat">' + iconMarkup(config.logo_url, '') + '</button>';
+      '<button class="ac-bubble" aria-label="Toggle chat">' + iconMarkup(config.logo_url, '') + '</button>';
     shadowRoot.appendChild(wrapper);
 
     applyTheme(config);
@@ -376,7 +383,9 @@
     let greeted = false;
     function openWindow() {
       chatWindow.classList.add('ac-open');
-      bubble.classList.add('ac-hidden');
+      // Bubble deliberately stays visible while the window is open --
+      // it now doubles as the toggle-closed control, not just an
+      // "open chat" trigger.
       if (!greeted) {
         // fake bot avatar row for the greeting, styled like a normal bot message
         const row = document.createElement('div');
@@ -398,10 +407,16 @@
     }
     function closeWindow() {
       chatWindow.classList.remove('ac-open');
-      bubble.classList.remove('ac-hidden');
+    }
+    function toggleWindow() {
+      if (chatWindow.classList.contains('ac-open')) {
+        closeWindow();
+      } else {
+        openWindow();
+      }
     }
 
-    bubble.addEventListener('click', openWindow);
+    bubble.addEventListener('click', toggleWindow);
     closeBtn.addEventListener('click', closeWindow);
 
     function handleSend() {
