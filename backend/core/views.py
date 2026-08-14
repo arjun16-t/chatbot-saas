@@ -33,11 +33,14 @@ from .serializers import (
 from .permissions import ProjectDomainPermission
 from .authentication import ProjectAPIKeyAuthentication
 from .tasks import delete_project_task
+from .crypto import encrypt_groq_key
+from .exceptions import GroqKeyRequired
 
 from utils.logger import get_logger
 from utils.token_obtain import set_refresh_cookie
 from utils.client_project import get_client_project, get_owned_project
 from utils.otp import create_and_send_otp
+from utils.validators import validate_groq_key
 
 logger = get_logger(__name__)
 
@@ -620,4 +623,82 @@ class ProjectDeleteView(APIView):
         return Response(
             {"success": True, "message": "Project deletion started", "data": None},
             status=status.HTTP_202_ACCEPTED
+        )
+
+
+class GroqKeyView(APIView):
+    """
+    Manage the authenticated client's BYOK Groq key.
+
+    GET    -> {"is_set": bool, "set_at": datetime|null}
+              Never returns the key itself, encrypted or otherwise.
+    PATCH  -> body: {"groq_api_key": "gsk_..."}
+              Encrypts and stores. Strip whitespace, reject blank.
+              Consider a loose format sanity check (e.g. non-empty,
+              reasonable length) but NOT a live validation call to
+              Groq — that's explicitly deferred.
+    DELETE -> clears groq_api_key_encrypted and groq_key_set_at.
+              A free-tier client who does this immediately loses
+              chat access on next request — that's the intended
+              behavior, not a bug to guard against.
+
+    permission_classes = [IsAuthenticated]
+    (JWT only — this is a dashboard-only endpoint, no project-key path)
+    """
+
+    def get(self, request):
+        client = request.user
+        is_set = client.has_groq_key
+        set_at = client.groq_api_key_set_at
+
+        return Response(
+            {
+                "success": True,
+                "message": "Groq API Key status fetched",
+                "data": {
+                    "is_set": is_set,
+                    "set_at": set_at
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def patch(self, request):
+        client = request.user
+        key = request.data.get("groq_api_key")
+        
+        key_clean = validate_groq_key(key)
+
+        client.groq_api_key_encrypted = encrypt_groq_key(key_clean)
+        client.groq_api_key_set_at = timezone.now()
+        client.save(update_fields=['groq_api_key_encrypted', 'groq_api_key_set_at'])
+
+        return Response(
+            {
+                "success": True,
+                "message": "Groq API Key successfully updated",
+                "data": {
+                    "is_set": True,
+                    "set_at": timezone.now()
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def delete(self, request):
+        client = request.user
+
+        client.groq_api_key_set_at = None
+        client.groq_api_key_encrypted = None
+        client.save(update_fields=['groq_api_key_set_at', 'groq_api_key_encrypted'])
+
+        return Response(
+            {
+                "success": True,
+                "message": "Groq API Key successfully deleted",
+                "data": {
+                    "is_set": False,
+                }
+            },
+            status=status.HTTP_204_NO_CONTENT
         )

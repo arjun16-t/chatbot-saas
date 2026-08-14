@@ -1,32 +1,27 @@
-# ============================================================
-# 1. core/crypto.py  (new file)
-# ============================================================
+from django.conf import settings
+from cryptography.fernet import Fernet, InvalidToken
 
-"""
-Symmetric encryption for client-supplied secrets that must be
-decrypted for actual use (unlike API keys, which are hash-only).
+from decouple import AutoConfig
+config = AutoConfig(search_path=settings.BASE_DIR.parent)
 
-Uses Fernet (AES-128-CBC + HMAC, from the `cryptography` package,
-already a transitive dep via simplejwt). The master key must live
-only in .env as GROQ_KEY_ENCRYPTION_SECRET — generate one once via
-Fernet.generate_key() and never rotate it without a migration plan
-for existing encrypted values.
-"""
+from utils.logger import get_logger
+logger = get_logger(__name__)
 
-
-def _get_fernet():
+_fernet = None
+def _get_fernet() -> Fernet:
     """
     Singleton Fernet instance, lazily built from settings.
-
-    Follow the same lazy-singleton pattern as _get_model() in
-    rag/utils/embedder.py and the QdrantClient getter in rag/query.py —
-    module-level global, built on first call, reused after.
 
     Returns:
         cryptography.fernet.Fernet
     """
-    ...
+    global _fernet
+    if _fernet is None:
+        key = bytes(config("GROQ_ENCRYPTION_KEY"), encoding="utf-8")
+        _fernet = Fernet(key)
+        logger.info("New Fernet instance created")
 
+    return _fernet
 
 def encrypt_groq_key(raw_key: str) -> bytes:
     """
@@ -40,7 +35,12 @@ def encrypt_groq_key(raw_key: str) -> bytes:
     Returns:
         Encrypted bytes, safe to store in Client.groq_api_key_encrypted.
     """
-    ...
+    cipher = _get_fernet()
+
+    raw_key = raw_key.encode()
+    encrypted_key = cipher.encrypt(raw_key)
+
+    return encrypted_key
 
 
 def decrypt_groq_key(encrypted: bytes) -> str:
@@ -64,66 +64,14 @@ def decrypt_groq_key(encrypted: bytes) -> str:
             set" at the call site — do not surface the raw exception
             to the client.
     """
-    ...
+    cipher = _get_fernet()
 
-
-# ============================================================
-# 2. core/models.py  (add to Client)
-# ============================================================
-
-# groq_api_key_encrypted = models.BinaryField(null=True, blank=True, editable=False)
-# groq_key_set_at = models.DateTimeField(null=True, blank=True)
-#
-# Consider a small property for cheap presence checks without decrypting:
-#
-# @property
-# def has_groq_key(self) -> bool:
-#     return bool(self.groq_api_key_encrypted)
-
-
-# ============================================================
-# 3. core/exceptions.py  (new APIException, alongside
-#    ChatbotUnavailable / IngestionFail / DeletionFail)
-# ============================================================
-
-class GroqKeyRequired:
-    """
-    Raised by ChatView when a free-tier client has no Groq key
-    configured. 402 is deliberate — semantically "you must supply
-    something (a key) before this request can proceed," distinct
-    from 401 (who are you) and 403 (you're not allowed).
-
-    status_code = 402
-    default_detail = "This project requires a Groq API key. Add one in your account settings."
-    default_code = "groq_key_required"
-    """
-    ...
-
-
-# ============================================================
-# 4. core/views.py  (new view — GET/PATCH/DELETE)
-# ============================================================
-
-class GroqKeyView:
-    """
-    Manage the authenticated client's BYOK Groq key.
-
-    GET    -> {"is_set": bool, "set_at": datetime|null}
-              Never returns the key itself, encrypted or otherwise.
-    PATCH  -> body: {"groq_api_key": "gsk_..."}
-              Encrypts and stores. Strip whitespace, reject blank.
-              Consider a loose format sanity check (e.g. non-empty,
-              reasonable length) but NOT a live validation call to
-              Groq — that's explicitly deferred.
-    DELETE -> clears groq_api_key_encrypted and groq_key_set_at.
-              A free-tier client who does this immediately loses
-              chat access on next request — that's the intended
-              behavior, not a bug to guard against.
-
-    permission_classes = [IsAuthenticated]
-    (JWT only — this is a dashboard-only endpoint, no project-key path)
-    """
-    ...
+    try:
+        decrypted_key = cipher.decrypt(encrypted)
+        raw_key = decrypted_key.decode()
+    except InvalidToken:
+        logger.exception("The received encrypted bytes are invalid")
+        raise
 
 
 # ============================================================

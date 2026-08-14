@@ -29,7 +29,7 @@ def get_client_project(request, project_id) -> Project:
 
     return project
 
-def get_owned_project(request, pk):
+def get_owned_project(request, pk) -> Project:
     """
     Fetches a Project owned by the authenticated client, excluding
     soft-deleted projects. Used by project-level views (rotate,
