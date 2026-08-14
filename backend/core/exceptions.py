@@ -119,9 +119,23 @@ class GroqKeyRequired(APIException):
     default_detail = "This project requires a Groq API key. Add one in your account settings."
     default_code = "groq_key_required"
 
+class GroqKeyInvalid(APIException):
+    """
+    Raised when a stored Groq key fails to decrypt — most likely
+    GROQ_ENCRYPTION_KEY was rotated/changed since the key was saved,
+    or the stored value is corrupted. Distinct from GroqKeyRequired
+    (no key set) since the client believes they've already configured
+    one — telling them to "add a key" would be confusing when they
+    already did.
+    """
+    status_code = 400
+    default_detail = "Your Groq API key could not be verified. Please re-add it in your account settings."
+    default_code = "groq_key_invalid"
+
 CUSTOM_EXCEPTIONS = (
     ChatbotUnavailable,
     IngestionFail,
     DeletionFail,
     GroqKeyRequired,
+    GroqKeyInvalid,
 )

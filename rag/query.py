@@ -39,17 +39,20 @@ def _get_qdrant_client():
     
     return _qdrant_client
 
-def _get_groq_client():
+def _get_groq_client(api_key: str = None):
+    if api_key is not None:
+        return Groq(api_key=api_key)
+
     global _groq_client
     if _groq_client is None:
         _groq_client = Groq(api_key=GROQ_API_KEY)
-    
     return _groq_client
 
 def query(
     question: str,
     client_id: str,
-    project_id: str
+    project_id: str,
+    groq_api_key: str = None
 ) -> dict:
     """
     Runs the full query pipeline for a single query.
@@ -68,7 +71,8 @@ def query(
         question (str): Natural language query from user.
         client_id (str): Unique identifier of the uploading client.
         project_id (str): Unique identifier of the project being queried.
-
+        groq_api_key: Build a per-request Groq client instead of using the
+            module-level singleton.
     Returns:
         dict: Query result containing:
             {
@@ -180,7 +184,7 @@ Question:
             }
         ]
 
-        chat_completion = _get_groq_client().chat.completions.create(
+        chat_completion = _get_groq_client(api_key=groq_api_key).chat.completions.create(
             messages=messages,
             model=QUERYING_MODEL,
             temperature=0.3
