@@ -693,12 +693,5 @@ class GroqKeyView(APIView):
         client.save(update_fields=['groq_api_key_set_at', 'groq_api_key_encrypted'])
 
         return Response(
-            {
-                "success": True,
-                "message": "Groq API Key successfully deleted",
-                "data": {
-                    "is_set": False,
-                }
-            },
             status=status.HTTP_204_NO_CONTENT
         )

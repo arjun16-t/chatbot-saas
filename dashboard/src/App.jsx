@@ -6,6 +6,7 @@ import HomeView from './pages/HomeView.jsx'
 import ProjectView from './pages/ProjectView.jsx'
 import ProjectConfigPage from './pages/ProjectConfigPage.jsx'
 import ManageProjectPage from './pages/ManageProjectPage.jsx'
+import AccountSettingsPage from './pages/AccountSettingsPage.jsx'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="projects/:projectId" element={<ProjectView />} />
         <Route path="projects/:projectId/config" element={<ProjectConfigPage />} />
         <Route path="projects/:projectId/manage" element={<ManageProjectPage />} />
+        <Route path="settings" element={<AccountSettingsPage />} />
       </Route>
     </Routes>
   )

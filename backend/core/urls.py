@@ -16,7 +16,8 @@ from .views import (
     ProjectRotateKeyView,
     ProjectRevokeView,
     ProjectDetailUpdateView,
-    ProjectDeleteView
+    ProjectDeleteView,
+    GroqKeyView
 )
 
 auth_patterns = [
@@ -27,6 +28,7 @@ auth_patterns = [
     path('login/', LoginClientView.as_view(), name='login'),
     path('logout/', LogoutClientView.as_view(), name='logout'),
     path('token/refresh/', RefreshClientView.as_view(), name='refresh_jwt'),
+    path('groq-config/', GroqKeyView.as_view(), name='groq_api_config'),
 ]
 
 widget_patterns = [

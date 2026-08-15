@@ -1,0 +1,230 @@
+.as-page {
+  padding: var(--space-5) 0 var(--space-7);
+}
+
+.as-page-header {
+  margin-bottom: var(--space-2);
+}
+
+.as-page-header h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-text-primary);
+  margin: 0 0 4px;
+}
+
+.as-page-header p {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.as-card-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+}
+
+.as-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.as-form-grid-full {
+  grid-column: 1 / -1;
+}
+
+/* Email lands in column 1 of its row via normal grid flow (no span
+   needed) -- the button right after it falls into column 2 of the
+   same row automatically, matching the reference layout. */
+.as-email-row {
+  /* no special placement needed -- default grid flow handles it */
+}
+
+.as-save-btn {
+  align-self: end;
+  justify-self: end;
+}
+
+.as-form-grid input:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.as-field-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+}
+
+/* Status block sits between .mp-action-text and the action button
+   inside .mp-action-row -- .mp-meta-label already gives the small
+   uppercase "API Key Status" text, this just stacks it over the badge. */
+.as-key-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.as-key-status .mp-meta-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.as-key-status .badge {
+  padding: var(--space-1) var(--space-3);
+}
+
+/* ---- Tooltip on the info icon ---- */
+.as-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.as-info-icon {
+  color: var(--color-text-secondary);
+  cursor: help;
+}
+
+.as-info-icon:hover,
+.as-info-icon:focus-visible {
+  color: var(--color-accent-primary);
+  outline: none;
+}
+
+.as-tooltip-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 220px;
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.5;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  z-index: 20;
+}
+
+.as-tooltip-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--color-text-primary);
+}
+
+.as-tooltip:hover .as-tooltip-bubble,
+.as-tooltip:focus-within .as-tooltip-bubble {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---- Links inside field hints (e.g. "Get one from Groq Console") ---- */
+.as-link {
+  color: var(--color-accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.as-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- GroqKeyModal ---- */
+.as-key-modal {
+  max-width: 440px;
+}
+
+.as-input-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.as-input-row input {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.as-eye-btn {
+  background: none;
+  border: none;
+  padding: 0 var(--space-3);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.as-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-status-error);
+  margin: var(--space-2) 0 0;
+}
+
+.as-btn-danger-text {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-status-error);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.as-btn-danger-text:hover {
+  background: color-mix(in srgb, var(--color-status-error) 10%, transparent);
+}
+
+.as-key-modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.as-key-modal-actions-right {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .as-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
