@@ -1,5 +1,7 @@
-from rest_framework.exceptions import ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.password_validation import validate_password
 
+from rest_framework.exceptions import ValidationError
 import re
 
 GROQ_KEY_LEN = 56
@@ -13,3 +15,26 @@ def validate_groq_key(key:str) -> str:
         raise ValidationError("Not a valid Groq API Key")
 
     return key.strip()
+
+def validate_name(value) -> str:
+    value = value.strip()
+
+    if len(value) < 2:
+        raise ValidationError(
+            "Name must be at least 2 characters."
+        )
+
+    if not re.fullmatch(r"[A-Za-z ]+_[A-Za-z ]+", value):
+        raise ValidationError(
+            "Name can only contain letters and spaces."
+        )
+
+    return value
+
+def validate_client_password(value: str) -> str:
+    try:
+        validate_password(value)
+    except DjangoValidationError as e:
+        raise ValidationError(e)
+    
+    return value

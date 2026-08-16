@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.serializers import ValidationError
@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from django.db import transaction, IntegrityError
 from django.db.models import Count
@@ -25,6 +26,8 @@ from datetime import timedelta
 from .models import Project, Client, OTPVerification
 from .serializers import (
     ClientSerializer,
+    ClientProfileSerializer,
+    ChangePasswordSerializer,
     ProjectSerializer,
     CustomTokenSerializer,
     ProjectThemeConfigSerializer,
@@ -34,13 +37,14 @@ from .permissions import ProjectDomainPermission
 from .authentication import ProjectAPIKeyAuthentication
 from .tasks import delete_project_task
 from .crypto import encrypt_groq_key
-from .exceptions import GroqKeyRequired
+from .mixins import EnvelopeResponseMixin
 
 from utils.logger import get_logger
 from utils.token_obtain import set_refresh_cookie
 from utils.client_project import get_client_project, get_owned_project
 from utils.otp import create_and_send_otp
 from utils.validators import validate_groq_key
+from utils.custom_responses import success_response
 
 logger = get_logger(__name__)
 
@@ -377,6 +381,57 @@ class LogoutClientView(APIView):
         response.delete_cookie("refresh_token")
         return response
 
+class ClientProfileView(EnvelopeResponseMixin, RetrieveUpdateAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = ClientProfileSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class ChangePasswordView(APIView):
+    """
+    POST /api/auth/change-password/
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        client = request.user
+        old_password = serializer.validated_data['old_password']
+        new_password = serializer.validated_data['new_password']
+
+        if not client.check_password(old_password):
+            raise ValidationError({"old_password": "Current password is incorrect."})
+
+        client.set_password(new_password)
+        client.save(update_fields=['password'])
+
+        current_jti = None      # JWT ID Claim
+        cookie_value = request.COOKIES.get('refresh_token')
+        if cookie_value:
+            try:
+                current_jti = RefreshToken(cookie_value)['jti']
+            except TokenError:
+                pass
+        
+        outstanding = OutstandingToken.objects.filter(user=client)
+        if current_jti:
+            outstanding = outstanding.exclude(jti=current_jti)
+        
+        BlacklistedToken.objects.bulk_create(
+            [BlacklistedToken(token=t) for t in outstanding],
+            ignore_conflicts=True,
+        )
+
+        return success_response(
+            message="Password updated. You've been logged out on all other devices."
+        )
 
 class ProjectListCreateView(ListCreateAPIView):
     """
