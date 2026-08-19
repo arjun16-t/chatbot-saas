@@ -65,6 +65,31 @@ export function AuthProvider({ children }) {
     return () => clearInterval(intervalRef.current)
   }, [accessToken, refresh])
 
+  // Fetches the full client profile from /me/ -- called whenever
+  // accessToken changes (initial refresh, interval refresh, or right
+  // after login()). Redundant immediately after login() since that
+  // already receives client data directly, but harmless -- this is
+  // what actually fills `client` in after a silent refresh, which
+  // login() never runs for.
+  const fetchProfile = useCallback(async (token) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (res.ok) setClient(data.data)
+      // Non-fatal on failure -- accessToken is still valid, just
+      // missing profile details this render; the next refresh cycle
+      // (45 min, or next mount) will fill it in.
+    } catch (err) {
+      // Network failure -- same non-fatal reasoning as above.
+    }
+  }, [])
+
+  useEffect(() => {
+    if (accessToken) fetchProfile(accessToken)
+  }, [accessToken, fetchProfile])
+
   function login(token, clientData) {
     setAccessToken(token)
     setClient(clientData)
@@ -90,7 +115,14 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const value = { accessToken, client, isInitializing, login, logout }
+  const value = {
+    accessToken,
+    client,
+    isInitializing,
+    login,
+    logout,
+    refreshProfile: () => fetchProfile(accessToken),
+  }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

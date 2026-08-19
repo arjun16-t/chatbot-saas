@@ -223,6 +223,18 @@
   margin-left: auto;
 }
 
+.as-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-status-success) 12%, transparent);
+  color: var(--color-status-success);
+  margin-bottom: var(--space-3);
+}
+
 @media (max-width: 640px) {
   .as-form-grid {
     grid-template-columns: 1fr;

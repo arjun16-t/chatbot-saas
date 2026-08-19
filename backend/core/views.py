@@ -407,7 +407,7 @@ class ChangePasswordView(APIView):
         new_password = serializer.validated_data['new_password']
 
         if not client.check_password(old_password):
-            raise ValidationError({"old_password": "Current password is incorrect."})
+            raise ValidationError("Current password is incorrect.")
 
         client.set_password(new_password)
         client.save(update_fields=['password'])

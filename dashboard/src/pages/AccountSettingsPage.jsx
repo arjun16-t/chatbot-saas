@@ -3,19 +3,14 @@ import { Lock, KeyRound, Info } from 'lucide-react'
 import { useAuth } from '../AuthContext.jsx'
 import ConfirmActionModal from '../components/manageProject/ConfirmActionModal.jsx'
 import GroqKeyModal from '../components/settings/GroqKeyModal.jsx'
+import ChangePasswordModal from '../components/settings/ChangePasswordModal.jsx'
 import '../styles/manageProject.css'
 import '../styles/accountSettings.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
-// Not wired yet -- Profile Information and Password are visual only
-// this sprint, per explicit scope. Swap for real handlers later.
-function handleNotImplemented() {
-  console.info('Not wired yet — placeholder for a future sprint.')
-}
-
 export default function AccountSettingsPage() {
-  const { accessToken, client } = useAuth()
+  const { accessToken, client, refreshProfile } = useAuth()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -25,6 +20,46 @@ export default function AccountSettingsPage() {
     setFirstName(f)
     setLastName(l)
   }, [client])
+
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState('')
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+
+  function authHeaders(extra = {}) {
+    return { Authorization: `Bearer ${accessToken}`, ...extra }
+  }
+
+  async function handleSaveProfile() {
+    const trimmedFirst = firstName.trim()
+    const trimmedLast = lastName.trim()
+    if (!trimmedFirst || !trimmedLast) {
+      setProfileError('First and last name are both required.')
+      return
+    }
+
+    setIsSavingProfile(true)
+    setProfileError('')
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me/`, {
+        method: 'PATCH',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ display_name: `${trimmedFirst}_${trimmedLast}` }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setProfileError(data.message || 'Could not update your profile.')
+        return
+      }
+      // Re-sync from the server rather than trusting local state --
+      // same reasoning as everywhere else in this app that calls a
+      // refresh/refetch after a successful write.
+      await refreshProfile()
+    } catch (err) {
+      setProfileError('Could not reach the server. Try again.')
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
 
   // ---- Groq key state ----
   const [isLoading, setIsLoading] = useState(true)
@@ -137,9 +172,10 @@ export default function AccountSettingsPage() {
             <label className="form-label" htmlFor="as-email">Email Address</label>
             <input id="as-email" type="email" value={client?.email || ''} disabled />
             <p className="as-field-hint">Email address cannot be changed.</p>
+            {profileError && <p className="as-error">{profileError}</p>}
           </div>
-          <button type="button" className="btn btn-primary as-save-btn" onClick={handleNotImplemented}>
-            Save Changes
+          <button type="button" className="btn btn-primary as-save-btn" onClick={handleSaveProfile} disabled={isSavingProfile}>
+            {isSavingProfile ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -152,7 +188,7 @@ export default function AccountSettingsPage() {
           <h4>Password</h4>
           <p>Reset your password to keep your account secure.</p>
         </div>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={handleNotImplemented}>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowPasswordModal(true)}>
           Reset Password
         </button>
       </div>
@@ -208,6 +244,11 @@ export default function AccountSettingsPage() {
         isSubmitting={isRemoving}
         onConfirm={handleRemoveKey}
         onCancel={() => setShowRemoveModal(false)}
+      />
+
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
       />
     </div>
   )
