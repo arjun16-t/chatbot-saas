@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import HomePage from './pages/HomePage.jsx'
 import AuthPage from './AuthPage.jsx'
 import DashboardLayout from './pages/DashboardLayout.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
@@ -11,7 +12,7 @@ import AccountSettingsPage from './pages/AccountSettingsPage.jsx'
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<AuthPage initialView="signin" />} />
       <Route path="/register" element={<AuthPage initialView="signup" />} />
       <Route
