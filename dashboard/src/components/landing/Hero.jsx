@@ -1,37 +1,25 @@
 import { Link } from 'react-router-dom'
 import { Zap } from 'lucide-react'
-import uiSnippetDocument from '../../assets/ui-snippet-document.png'
-import uiSnippetChat from '../../assets/ui-snippet-chat.png'
-import uiSnippetLatency from '../../assets/ui-snippet-latency.png'
+import HeroIllustration from './HeroIllustration.jsx'
 
 function Hero() {
   return (
     <section className="hero">
       <div className="hero-glow" />
 
-      <div className="hero-floating-ui" aria-hidden="true">
-        <div className="floating-card float-left">
-          <img src={uiSnippetDocument} alt="Document processing UI" />
-        </div>
-        <div className="floating-card float-bottom">
-          <img src={uiSnippetChat} alt="Chat interface UI" />
-        </div>
-        <div className="floating-card float-right">
-          <img src={uiSnippetLatency} alt="Latency metrics UI" />
-        </div>
-      </div>
+      <div className="hero-inner">
+        <div className="hero-text-col">
+          <h1 className="reveal">Turn your documents into an <span className="text-gradient">AI chatbot.</span></h1>
+          <p className="reveal">Upload your docs and get a working chatbot on your site in minutes — no vector database to set up, no infrastructure to manage.</p>
 
-      <div className="hero-content">
-        <div className="hero-badge reveal">
-          <Zap size={14} />
-          <span>Live in under 2 minutes.</span>
+          <div className="hero-actions reveal">
+            <Link to="/register" className="btn btn-primary lp-btn-lg">Deploy your chatbot</Link>
+            <span className="hero-cta-caption"><Zap size={12} /> Live in under 2 minutes — free to try</span>
+          </div>
         </div>
 
-        <h1 className="reveal">Turn your documents into an <span className="text-gradient">AI chatbot.</span></h1>
-        <p className="reveal">AthenaChat helps teams instantly vectorize their PDFs, docs, and text files into a highly accurate, deployable AI assistant.</p>
-
-        <div className="hero-actions reveal">
-          <Link to="/register" className="btn btn-primary lp-btn-lg">Deploy your chatbot</Link>
+        <div className="hero-illustration-col reveal">
+          <HeroIllustration />
         </div>
       </div>
     </section>

@@ -18,15 +18,22 @@ gsap.registerPlugin(ScrollTrigger)
 /**
  * Public landing page ("/"). Reimplements home.js's ScrollReveal
  * module as a mount-time effect targeting the same .reveal /
- * .reveal-stagger classes the original static site used -- markup
- * didn't need to change, just how it's wired up.
+ * .reveal-stagger classes the original static site used.
  *
- * PipelineSimulation owns its own GSAP ScrollTrigger setup/cleanup
- * independently (see that component) -- nothing pipeline-specific
- * lives here.
+ * Respects prefers-reduced-motion: .reveal/.reveal-stagger elements
+ * have no permanent CSS opacity:0 -- that's only ever set transiently
+ * by the GSAP tween itself -- so skipping the effect entirely leaves
+ * them at their natural, fully-visible DOM state. No extra gsap.set
+ * needed to "undo" anything.
+ *
+ * PipelineSimulation owns its own reduced-motion + mobile handling
+ * independently (see that component).
  */
 function HomePage() {
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
     const revealAnims = gsap.utils.toArray('.reveal').map((el) =>
       gsap.fromTo(
         el,
