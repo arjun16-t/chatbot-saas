@@ -447,7 +447,7 @@
   gap: 24px;
   max-width: 1200px;
   margin: 0 auto;
-  grid-auto-rows: minmax(320px, auto);
+  auto-rows: minmax(320px, auto);
 }
 .span-2 { grid-column: span 2; }
 
@@ -724,6 +724,18 @@
   pointer-events: none;
   z-index: 1;
 }
+.owl-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 560px;
+  height: 560px;
+  color: rgba(255, 255, 255, 0.04);
+  z-index: 1;
+  pointer-events: none;
+}
+
 .cta-grid-overlay {
   position: absolute;
   inset: 0;

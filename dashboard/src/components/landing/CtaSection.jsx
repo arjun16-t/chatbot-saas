@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
+import OwlWatermark from './OwlWatermark.jsx'
 
 // "Read the Docs" secondary button removed per explicit instruction --
 // no public docs site exists yet.
@@ -8,6 +9,7 @@ function CtaSection() {
     <section className="cta-section">
       <div className="cta-container">
         <div className="cta-glow" />
+        <OwlWatermark />
         <div className="cta-grid-overlay" />
 
         <div className="cta-content">

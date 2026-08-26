@@ -19,9 +19,9 @@ const QUERY_BUTTONS = [
 ]
 
 const NARRATIVE_STEPS = [
-  { id: 'step-upload', title: '1. Ingestion', body: 'Upload your knowledge base. We securely process your PDFs, docs, and text files instantly.' },
-  { id: 'step-chunk', title: '2. Semantic Chunking', body: 'Documents are split into overlapping blocks, ensuring no vital context is lost at the boundaries.' },
-  { id: 'step-embed', title: '3. Embedding & Storage', body: 'Chunks are converted into dense and sparse vectors, securely stored in an isolated Vector DB.' },
+  { id: 'step-upload', title: '1. Ingestion', body: 'Upload your knowledge base. We securely process your PDFs, docs, and text files instantly.', metric: 'Validated in <1s' },
+  { id: 'step-chunk', title: '2. Semantic Chunking', body: 'Documents are split into overlapping blocks, ensuring no vital context is lost at the boundaries.', metric: '1,500 char chunks, 150 overlap' },
+  { id: 'step-embed', title: '3. Embedding & Storage', body: 'Chunks are converted into dense and sparse vectors, securely stored in an isolated Vector DB.', metric: '768-dim dense + sparse vectors' },
 ]
 
 // Final target strings for the scramble-reveal -- one per .sim-chunk,
@@ -253,6 +253,7 @@ function PipelineSimulation() {
               <div className="pipeline-static-step reveal" key={step.id}>
                 <h3>{step.title}</h3>
                 <p>{step.body}</p>
+                <div className="step-metric">{step.metric}</div>
               </div>
             ))}
           </div>
@@ -282,27 +283,37 @@ function PipelineSimulation() {
               <div className="narrative-step" id="step-upload">
                 <h3>1. Ingestion</h3>
                 <p>Upload your knowledge base. We securely process your PDFs, docs, and text files instantly.</p>
+                <div className="step-metric">Validated in &lt;1s</div>
               </div>
 
               <div className="narrative-step" id="step-chunk">
                 <h3>2. Semantic Chunking</h3>
                 <p>Documents are split into overlapping blocks, ensuring no vital context is lost at the boundaries.</p>
+                <div className="step-metric">1,500 char chunks, 150 overlap</div>
               </div>
 
               <div className="narrative-step" id="step-embed">
                 <h3>3. Embedding &amp; Storage</h3>
                 <p>Chunks are converted into dense and sparse vectors, securely stored in an isolated Vector DB.</p>
+                <div className="step-metric">768-dim dense + sparse vectors</div>
               </div>
 
               <div className="narrative-step" id="step-query">
                 <h3>4. Retrieval in Action</h3>
                 <p>Select a question below to see how AthenaChat retrieves the exact context and generates an answer.</p>
+                <div className="step-metric">Hybrid search, RRF fusion, ~124ms</div>
                 {queryButtons}
               </div>
             </div>
 
             <div className="pipeline-visuals">
               <div className="canvas-container">
+                <div className="canvas-ambient-dot d1" />
+                <div className="canvas-ambient-dot d2" />
+                <div className="canvas-ambient-dot d3" />
+                <div className="canvas-ambient-dot d4" />
+                <div className="canvas-ambient-dot d5" />
+                <div className="canvas-ambient-dot d6" />
 
                 <div className="sim-ingestion-stage">
                   <div className="sim-doc" id="sim-doc">
