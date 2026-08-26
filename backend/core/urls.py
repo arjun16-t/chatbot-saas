@@ -1,23 +1,7 @@
 from django.urls import path, include
 from chatbot.urls import querypatterns
 
-from .views import (
-    RegisterClientView,
-    LoginClientView,
-    RefreshClientView,
-    LogoutClientView,
-    SendOTPView,
-    VerifyOTPView,
-    ResendOTPView,
-    WidgetConfigView,
-    ProjectListCreateView,
-    CheckDomainAvailabilityView,
-    ProjectConfigView,
-    ProjectRotateKeyView,
-    ProjectRevokeView,
-    ProjectDetailUpdateView,
-    ProjectDeleteView
-)
+from .views import *
 
 auth_patterns = [
     path('send-otp/', SendOTPView.as_view(), name='send_otp'),
@@ -26,7 +10,11 @@ auth_patterns = [
     path('register/', RegisterClientView.as_view(), name='register_client'),
     path('login/', LoginClientView.as_view(), name='login'),
     path('logout/', LogoutClientView.as_view(), name='logout'),
+    path('me/', ClientProfileView.as_view(), name='client_profile'),
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
+
     path('token/refresh/', RefreshClientView.as_view(), name='refresh_jwt'),
+    path('groq-config/', GroqKeyView.as_view(), name='groq_api_config'),
 ]
 
 widget_patterns = [

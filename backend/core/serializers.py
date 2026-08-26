@@ -1,8 +1,7 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import EmailValidator
-from django.core.exceptions import ValidationError
 
 from rest_framework import serializers
 from urllib.parse import urlparse
@@ -10,6 +9,8 @@ from urllib.parse import urlparse
 import re
 
 from .models import Client, Project, default_widget_theme
+
+from utils.validators import validate_name, validate_client_password
 
 HEX_COLOR_RE = re.compile(r'^#[0-9A-Fa-f]{6}$')
 LOCAL_HOSTS = {'localhost', '127.0.0.1'}
@@ -42,14 +43,13 @@ class ClientSerializer(serializers.ModelSerializer):
         Raises:
             serializers.ValidationError: If password fails any validator.
         """
-        validate_password(value)
-        return value
+        return validate_client_password(value)
     
     def validate_email(self, value):
         validator = EmailValidator()
         try:
             validator(value)
-        except ValidationError:
+        except DjangoValidationError:
             raise serializers.ValidationError("Invalid email format")
         # Check email uniqueness
         if Client.objects.filter(email=value).exists():
@@ -75,7 +75,38 @@ class ClientSerializer(serializers.ModelSerializer):
             display_name=display_name,
             **validated_data)
         return client
+
+class ClientProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for GET/PATCH /api/auth/me/.
+    """
+    class Meta:
+        model = Client
+        fields = ['id', 'email', 'display_name', 'created_at']
+        read_only_fields = ['id', 'email', 'created_at']
+
+    def validate_display_name(self, value: str) -> str:
+        return validate_name(value)
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Runs Django's built-in password validators against the given value.
     
+    Args:
+        value: Raw password string from the request.
+    
+    Returns:
+        The validated password string.
+    
+    Raises:
+        serializers.ValidationError: If password fails any validator.
+    """
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+
+    def validate_new_password(self, value: str) -> str:
+        return validate_client_password(value)
+
 class CustomTokenSerializer(TokenObtainPairSerializer):
     """
     Extends simplejwt's default token serializer to allow adding

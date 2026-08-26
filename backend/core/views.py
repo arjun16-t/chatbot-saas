@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.serializers import ValidationError
@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from django.db import transaction, IntegrityError
 from django.db.models import Count
@@ -25,6 +26,8 @@ from datetime import timedelta
 from .models import Project, Client, OTPVerification
 from .serializers import (
     ClientSerializer,
+    ClientProfileSerializer,
+    ChangePasswordSerializer,
     ProjectSerializer,
     CustomTokenSerializer,
     ProjectThemeConfigSerializer,
@@ -33,11 +36,15 @@ from .serializers import (
 from .permissions import ProjectDomainPermission
 from .authentication import ProjectAPIKeyAuthentication
 from .tasks import delete_project_task
+from .crypto import encrypt_groq_key
+from .mixins import EnvelopeResponseMixin
 
 from utils.logger import get_logger
 from utils.token_obtain import set_refresh_cookie
 from utils.client_project import get_client_project, get_owned_project
 from utils.otp import create_and_send_otp
+from utils.validators import validate_groq_key
+from utils.custom_responses import success_response
 
 logger = get_logger(__name__)
 
@@ -374,6 +381,57 @@ class LogoutClientView(APIView):
         response.delete_cookie("refresh_token")
         return response
 
+class ClientProfileView(EnvelopeResponseMixin, RetrieveUpdateAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = ClientProfileSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class ChangePasswordView(APIView):
+    """
+    POST /api/auth/change-password/
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        client = request.user
+        old_password = serializer.validated_data['old_password']
+        new_password = serializer.validated_data['new_password']
+
+        if not client.check_password(old_password):
+            raise ValidationError("Current password is incorrect.")
+
+        client.set_password(new_password)
+        client.save(update_fields=['password'])
+
+        current_jti = None      # JWT ID Claim
+        cookie_value = request.COOKIES.get('refresh_token')
+        if cookie_value:
+            try:
+                current_jti = RefreshToken(cookie_value)['jti']
+            except TokenError:
+                pass
+        
+        outstanding = OutstandingToken.objects.filter(user=client)
+        if current_jti:
+            outstanding = outstanding.exclude(jti=current_jti)
+        
+        BlacklistedToken.objects.bulk_create(
+            [BlacklistedToken(token=t) for t in outstanding],
+            ignore_conflicts=True,
+        )
+
+        return success_response(
+            message="Password updated. You've been logged out on all other devices."
+        )
 
 class ProjectListCreateView(ListCreateAPIView):
     """
@@ -620,4 +678,75 @@ class ProjectDeleteView(APIView):
         return Response(
             {"success": True, "message": "Project deletion started", "data": None},
             status=status.HTTP_202_ACCEPTED
+        )
+
+
+class GroqKeyView(APIView):
+    """
+    Manage the authenticated client's BYOK Groq key.
+
+    GET    -> {"is_set": bool, "set_at": datetime|null}
+              Never returns the key itself, encrypted or otherwise.
+    PATCH  -> body: {"groq_api_key": "gsk_..."}
+              Encrypts and stores. Strip whitespace, reject blank.
+              Consider a loose format sanity check (e.g. non-empty,
+              reasonable length) but NOT a live validation call to
+              Groq — that's explicitly deferred.
+    DELETE -> clears groq_api_key_encrypted and groq_key_set_at.
+              A free-tier client who does this immediately loses
+              chat access on next request — that's the intended
+              behavior, not a bug to guard against.
+
+    permission_classes = [IsAuthenticated]
+    (JWT only — this is a dashboard-only endpoint, no project-key path)
+    """
+
+    def get(self, request):
+        client = request.user
+        is_set = client.has_groq_key
+        set_at = client.groq_api_key_set_at
+
+        return Response(
+            {
+                "success": True,
+                "message": "Groq API Key status fetched",
+                "data": {
+                    "is_set": is_set,
+                    "set_at": set_at
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def patch(self, request):
+        client = request.user
+        key = request.data.get("groq_api_key")
+        
+        key_clean = validate_groq_key(key)
+
+        client.groq_api_key_encrypted = encrypt_groq_key(key_clean)
+        client.groq_api_key_set_at = timezone.now()
+        client.save(update_fields=['groq_api_key_encrypted', 'groq_api_key_set_at'])
+
+        return Response(
+            {
+                "success": True,
+                "message": "Groq API Key successfully updated",
+                "data": {
+                    "is_set": True,
+                    "set_at": timezone.now()
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+    def delete(self, request):
+        client = request.user
+
+        client.groq_api_key_set_at = None
+        client.groq_api_key_encrypted = None
+        client.save(update_fields=['groq_api_key_set_at', 'groq_api_key_encrypted'])
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
         )

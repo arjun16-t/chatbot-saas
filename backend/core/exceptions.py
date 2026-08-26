@@ -53,7 +53,7 @@ def custom_exception_handler(exc, context):
 
     message = extract_message(original_detail)
 
-    if isinstance(exc, (ChatbotUnavailable, IngestionFail, DeletionFail)):
+    if isinstance(exc, CUSTOM_EXCEPTIONS):
         response.data = {
             "success": False,
             "message": message,
@@ -109,3 +109,33 @@ class DeletionFail(APIException):
     status_code = 503
     default_detail = 'Unable to delete document. Please try again later.'
     default_code = 'deletion_fail'
+
+class GroqKeyRequired(APIException):
+    """
+    Raised by ChatView when a free-tier client has no Groq key
+    configured.
+    """
+    status_code = 400
+    default_detail = "This project requires a Groq API key. Add one in your account settings."
+    default_code = "groq_key_required"
+
+class GroqKeyInvalid(APIException):
+    """
+    Raised when a stored Groq key fails to decrypt — most likely
+    GROQ_ENCRYPTION_KEY was rotated/changed since the key was saved,
+    or the stored value is corrupted. Distinct from GroqKeyRequired
+    (no key set) since the client believes they've already configured
+    one — telling them to "add a key" would be confusing when they
+    already did.
+    """
+    status_code = 400
+    default_detail = "Your Groq API key could not be verified. Please re-add it in your account settings."
+    default_code = "groq_key_invalid"
+
+CUSTOM_EXCEPTIONS = (
+    ChatbotUnavailable,
+    IngestionFail,
+    DeletionFail,
+    GroqKeyRequired,
+    GroqKeyInvalid,
+)

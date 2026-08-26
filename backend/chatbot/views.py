@@ -8,15 +8,18 @@ from rest_framework import status
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from core.exceptions import ChatbotUnavailable
+from core.exceptions import ChatbotUnavailable, GroqKeyRequired, GroqKeyInvalid
 from core.permissions import ProjectDomainPermission, WidgetEnabledPermission
 from core.authentication import ProjectAPIKeyAuthentication
 from core.throttling import ClientProjectThrottle
 from core.models import Project
 from core.mixins import EnvelopeResponseMixin
+from core.crypto import decrypt_groq_key
 
 from .models import UnansweredQuery
 from .serializers import QuerySerializer, UnansweredQuerySerializer
+
+from cryptography.fernet import InvalidToken
 
 from rag.query import query as query_rag
 from utils.logger import get_logger
@@ -34,8 +37,18 @@ class ChatView(APIView):
         serializer.is_valid(raise_exception=True)
 
         question = serializer.validated_data['question']
-        client_id = str(request.user.id)
+        client = request.user
+        client_id = str(client.id)
 
+        if not client.has_groq_key:
+            raise GroqKeyRequired()
+        
+        try:
+            groq_api_key = decrypt_groq_key(client.groq_api_key_encrypted)
+        except InvalidToken:
+            logger.error(f"Groq key decryption failed for client {client.id} — possible GROQ_ENCRYPTION_KEY mismatch")
+            raise GroqKeyInvalid()
+        
         if isinstance(request.auth, Project):
             project = request.auth
         else:
@@ -47,7 +60,12 @@ class ChatView(APIView):
         project_id = str(project.id)
 
         try:
-            result = query_rag(question, client_id, project_id)
+            result = query_rag(
+                question=question,
+                client_id=client_id,
+                project_id=project_id,
+                groq_api_key=groq_api_key
+            )
         except Exception as e:
             logger.exception(f'Query Pipeline Failed')
             raise ChatbotUnavailable()
@@ -61,7 +79,7 @@ class ChatView(APIView):
 
         if result['status'] == 'unanswered':
             UnansweredQuery.objects.create(
-                project=request.auth,
+                project=project,
                 query=result['query']
             )
             logger.info(f"Unanswered Query: {result['query']} Saved!")

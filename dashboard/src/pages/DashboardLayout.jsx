@@ -22,6 +22,7 @@ function DashboardLayout() {
   const location = useLocation()
   const isConfigView = location.pathname.endsWith('/config')
   const isManageView = location.pathname.endsWith('/manage')
+  const isSettingsView = location.pathname.endsWith('/settings')
 
   const navigate = useNavigate()
   const { accessToken, client, logout } = useAuth()
@@ -171,7 +172,7 @@ function DashboardLayout() {
 
           <div className="sidebar-scroll-area">
             <nav className="nav-grid">
-              <button type="button" className={`nav-tile ${isHomeView ? 'is-active' : ''}`} onClick={() => safeNavigate('/dashboard')}>
+              <button type="button" className={`nav-tile ${isHomeView && !isSettingsView ? 'is-active' : ''}`} onClick={() => safeNavigate('/dashboard')}>
                 <LayoutDashboard size={24} />
                 <span>Dashboard</span>
               </button>
@@ -252,7 +253,12 @@ function DashboardLayout() {
             {profileMenuOpen && (
               <div className="profile-menu is-active">
                 <button type="button"><User size={16} /> My Profile</button>
-                <button type="button"><Settings size={16} /> Account Settings</button>
+                <button
+                  type="button"
+                  onClick={() => { safeNavigate('/dashboard/settings'); setProfileMenuOpen(false) }}
+                >
+                  <Settings size={16} /> Account Settings
+                </button>
                 <button type="button"><CreditCard size={16} /> Billing</button>
               </div>
             )}
@@ -266,7 +272,7 @@ function DashboardLayout() {
 
       <main className="dashboard-main" id="main-scroll-area">
         <div className="header-bento-wrapper">
-          <header className={`main-header-sticky bento-box ${isHeaderScrolled || isConfigView || isManageView ? 'is-scrolled' : ''}`}>
+          <header className={`main-header-sticky bento-box ${isHeaderScrolled || isConfigView || isManageView || isSettingsView ? 'is-scrolled' : ''}`}>
             <div className="header-top-bar">
               <div className="header-titles">
                 <div className="breadcrumbs">
@@ -274,6 +280,7 @@ function DashboardLayout() {
                   <span style={{ cursor: 'pointer' }} onClick={() => { safeNavigate('/dashboard'); setIsProjectMenuOpen(false) }}>
                     Dashboard
                   </span>
+                  {isSettingsView && <> / <strong>Account Settings</strong></>}
                   {!isHomeView && (
                     <>
                       {' / '}
@@ -321,7 +328,7 @@ function DashboardLayout() {
 
             <div className="header-collapsible-area">
               <div className="minimal-stats-group">
-                {isHomeView ? (
+                {isSettingsView ? null : isHomeView ? (
                   <>
                     <div className="minimal-stat-item">
                       <div className="stat-top"><div className="stat-icon-tiny"><Folder size={16} /></div><span className="stat-huge-number">{projects.length}</span></div>
@@ -350,7 +357,7 @@ function DashboardLayout() {
                 )}
               </div>
 
-              {isHomeView && (
+              {isHomeView && !isSettingsView && (
                 <div className="header-gauge-card">
                   <div className="gauge-info">
                     <span className="gauge-title">API Usage</span>

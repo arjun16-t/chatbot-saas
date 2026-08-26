@@ -76,6 +76,7 @@ class Client(AbstractUser, BaseModel):
         editable=False,
         verbose_name="client_id"
     )
+
     username = None
     display_name = models.CharField(max_length=50, blank=True, default='')
     email = models.EmailField(unique=True)
@@ -85,8 +86,15 @@ class Client(AbstractUser, BaseModel):
         default='free'
     )
 
+    groq_api_key_encrypted = models.TextField(null=True, blank=True, editable=False)
+    groq_api_key_set_at = models.DateTimeField(null=True, blank=True)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+    @property
+    def has_groq_key(self) -> bool:
+        return bool(self.groq_api_key_encrypted)
 
 class ProjectManager(models.Manager):
     """
