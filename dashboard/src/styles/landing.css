@@ -447,7 +447,7 @@
   gap: 24px;
   max-width: 1200px;
   margin: 0 auto;
-  auto-rows: minmax(320px, auto);
+  grid-auto-rows: minmax(320px, auto);
 }
 .span-2 { grid-column: span 2; }
 
