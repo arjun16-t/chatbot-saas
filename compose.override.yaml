@@ -1,0 +1,27 @@
+services:
+  celery:
+    volumes:
+      - .:/app
+      - /app/.venv
+
+  backend:
+    volumes:
+      - .:/app
+      - /app/.venv
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /app/backend
+          ignore:
+            - .venv/
+          
+        - action: sync+restart
+          path: ./rag
+          target: /app/rag
+        
+        - action: rebuild
+          path: ./pyproject.toml
+
+        - action: rebuild
+          path: ./uv.lock
