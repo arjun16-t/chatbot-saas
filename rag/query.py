@@ -107,7 +107,7 @@ def query(
         }
 
         if _is_chitchat(question):
-            answer = _handle_chitchat(question)
+            answer = _handle_chitchat(question, api_key=groq_api_key)
             
             result_dict["answer"] = answer
             result_dict["status"] = "answered"
@@ -307,7 +307,7 @@ def _is_chitchat(question: str) -> bool:
     return any(pattern.match(normalized) for pattern in _CHITCHAT_PATTERNS)
 
 
-def _handle_chitchat(question: str) -> str:
+def _handle_chitchat(question: str, api_key: str = None) -> str:
     """
     Generates a short, natural reply to detected small-talk,
     skipping retrieval entirely -- there's no document context
@@ -327,7 +327,7 @@ specifics about the business you haven't been told.
         },
         {"role": "user", "content": question},
     ]
-    chat_completion = _get_groq_client().chat.completions.create(
+    chat_completion = _get_groq_client(api_key=api_key).chat.completions.create(
         messages=messages,
         model=QUERYING_MODEL,
         temperature=0.7,

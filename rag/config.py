@@ -20,7 +20,7 @@ CHUNK_SIZE=1024     # 4 characters = 1 token -> 2048 = 256 tokens
 OVERLAP=100         # 100 = 20 tokens
 PREFETCH_LIMIT=20
 
-GROQ_API_KEY=config("GROQ_API_KEY")
+GROQ_API_KEY=config("GROQ_API_KEY", default=None)
 QUERYING_MODEL=config("QUERYING_MODEL") or None
 
 # utils/pdf.py
