@@ -47,7 +47,7 @@ services:
     working_dir: /app/backend
     env_file:
       - .env
-    command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=1"]
     volumes:
       - media-data:/app/media/
     depends_on:
