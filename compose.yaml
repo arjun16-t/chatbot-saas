@@ -49,7 +49,7 @@ services:
       - .env
     command: ["celery", "-A", "config", "worker", "--loglevel=info", "--concurrency=1"]
     volumes:
-      - media-data:/app/media/
+      - media-data:/app/backend/media/
     depends_on:
       db:
         condition: service_healthy
@@ -88,7 +88,7 @@ services:
       migrations:
         condition: service_completed_successfully
     volumes:
-      - media-data:/app/media/
+      - media-data:/app/backend/media/
 
   caddy:
     image: caddy:2-alpine
