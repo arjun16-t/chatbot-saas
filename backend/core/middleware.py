@@ -1,7 +1,6 @@
+from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
-from django.conf import settings
-
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -30,7 +29,7 @@ class IPRateLimitMiddleware:
         if not request.path.startswith('/api/'):
             return self.get_response(request)
         
-        ip = request.META.get('REMOTE_ADDR', 'unknown')
+        ip = _get_client_ip(request)
         key = f"throttle:ip:{ip}"
 
         count = cache.get(key)
@@ -56,3 +55,26 @@ class IPRateLimitMiddleware:
                 cache.set(key, 1, timeout=self.WINDOW_SECONDS)
         
         return self.get_response(request)
+
+def _get_client_ip(request) -> str:
+    """
+    Resolves the real client IP, accounting for Caddy sitting in
+    front of Django as a reverse proxy.
+
+    X-Forwarded-For can contain a chain of IPs (client, then each
+    proxy hop) if multiple proxies are involved -- the leftmost
+    entry is the original client. Falls back to REMOTE_ADDR when
+    the header is absent (e.g. local dev, no proxy in front).
+
+    Args:
+        request: Django HttpRequest.
+
+    Returns:
+        str: Best-effort client IP, or 'unknown' if neither source
+            is available.
+    """
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+
+    return request.META.get('REMOTE_ADDR', 'unknown')

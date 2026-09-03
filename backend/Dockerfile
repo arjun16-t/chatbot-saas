@@ -60,4 +60,4 @@ USER docker-app
 EXPOSE 8000
 
 # Run Django directly using the python executable from the PATH-injected .venv
-CMD [ "python", "backend/manage.py", "runserver", "0.0.0.0:8000" ]
+CMD ["gunicorn", "config.wsgi:application", "--chdir", "backend", "--bind", "0.0.0.0:8000", "--workers", "2"]
