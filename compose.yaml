@@ -57,8 +57,6 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
-      qdrant:
-        condition: service_started
   
   celery-beat:
     build:
@@ -75,8 +73,6 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
-      qdrant:
-        condition: service_started
 
   backend:
     build:
@@ -84,8 +80,6 @@ services:
       dockerfile: backend/Dockerfile
     env_file:
       - .env
-    ports:
-      - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -93,20 +87,24 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
-      qdrant:
-        condition: service_started
     volumes:
       - media-data:/app/media/
 
-  qdrant:
-    image: qdrant/qdrant:latest
+  caddy:
+    image: caddy:2-alpine
     ports:
-      - "6334:6333"
+      - "80:80"
+      - "443:443"
     volumes:
-      - qdrant-data:/qdrant/storage
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
 
 volumes:
   pg-data:
-  qdrant-data:
   redis-data:
   media-data:
+  caddy-data:
+  caddy-config:
