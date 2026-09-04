@@ -27,12 +27,20 @@ COPY widget/ ./widget/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
+RUN --mount=type=cache,target=/root/.cache/uv \
+    EMBEDDING_MODEL=jinaai/jina-embeddings-v5-text-nano \
+    SPARSE_MODEL=Qdrant/bm42-all-minilm-l6-v2-attentions \
+    QDRANT_URL=http://localhost:6333 \
+    QUERYING_MODEL=llama-3.3-70b-versatile \
+    DEBUG=False \
+    uv run python -c "from rag.utils.embedder import _get_model, _get_sparse_model; _get_model(); _get_sparse_model()"
+
 
 # ==========================================
 # STAGE 2: Runtime
 # Purpose: Run the application in a minimal image without the uv toolchain.
 # ==========================================
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-trixie
 
 WORKDIR /app
 
@@ -54,7 +62,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Copy the fully built /app directory (including the .venv) from the builder stage
 COPY --from=builder --chown=docker-app:docker-app /app /app
 
-RUN mkdir -p /app/backend/media && chown docker-app:docker-app /app/backend/media
+RUN mkdir -p /app/backend/media /app/backend/staticfiles && \
+    chown docker-app:docker-app /app/backend/media /app/backend/staticfiles
 
 # Switch to the secure non-root user
 USER docker-app
