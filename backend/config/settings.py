@@ -1,8 +1,8 @@
-from pathlib import Path
-from decouple import AutoConfig, Csv
-from corsheaders.defaults import default_headers
-
 import sys
+from pathlib import Path
+
+from corsheaders.defaults import default_headers
+from decouple import AutoConfig, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,7 +61,7 @@ IP_RATE_WINDOW = 60
 
 MIDDLEWARE = [
     # CORS must be as high as possible — before any response is returned
-    'corsheaders.middleware.CorsMiddleware',
+    'core.middleware.DynamicCorsMiddleware',
 
     'django.middleware.security.SecurityMiddleware',
     'core.middleware.IPRateLimitMiddleware',

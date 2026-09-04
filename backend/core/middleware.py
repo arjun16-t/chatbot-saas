@@ -1,7 +1,12 @@
+from urllib.parse import urlparse
+
+from corsheaders.middleware import CorsMiddleware
 from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 from utils.logger import get_logger
+
+from core.models import Project
 
 logger = get_logger(__name__)
 
@@ -78,3 +83,29 @@ def _get_client_ip(request) -> str:
         return forwarded_for.split(',')[0].strip()
 
     return request.META.get('REMOTE_ADDR', 'unknown')
+
+class DynamicCorsMiddleware(CorsMiddleware):
+    """
+    Extends django-cors-headers to additionally allow origins matching
+    any active Project's registered domain -- needed because the widget
+    is embedded on arbitrary client websites that can't be known ahead
+    of time as a static CORS_ALLOWED_ORIGINS list.
+
+    Falls back to the standard static list first (still governs the
+    dashboard's fixed, credentialed origin) -- this method only adds
+    to what's allowed, never removes.
+    """
+
+    def origin_found_in_white_lists(self, origin: str, url) -> bool:
+        if super().origin_found_in_white_lists(origin, url):
+            return True
+
+        domain = urlparse(origin).netloc.lower()
+        if not domain:
+            return False
+
+        return Project.objects.filter(
+            domain=domain,
+            is_active=True,
+            is_deleted=False,
+        ).exists()
