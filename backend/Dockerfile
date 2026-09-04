@@ -53,6 +53,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Copy the fully built /app directory (including the .venv) from the builder stage
 COPY --from=builder --chown=docker-app:docker-app /app /app
 
+RUN mkdir -p /app/backend/media && chown docker-app:docker-app /app/backend/media
+
 # Switch to the secure non-root user
 USER docker-app
 
