@@ -21,6 +21,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy your application source code
 COPY backend/ ./backend/
 COPY rag/ ./rag/
+COPY widget/ ./widget/
 
 # Sync again to install the project source into the environment
 RUN --mount=type=cache,target=/root/.cache/uv \

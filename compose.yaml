@@ -35,7 +35,7 @@ services:
       dockerfile: backend/Dockerfile
     env_file:
       - .env
-    command: ["python", "backend/manage.py", "migrate"]
+    command: ["sh", "-c", "python backend/manage.py migrate && python backend/manage.py collectstatic --noinput"]
     depends_on:
       db:
         condition: service_healthy
@@ -89,6 +89,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - media-data:/app/backend/media/
+      - static-data:/app/backend/staticfiles/
 
   caddy:
     image: caddy:2-alpine
@@ -99,6 +100,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy-data:/data
       - caddy-config:/config
+      - static-data:/srv/static/
     depends_on:
       - backend
 
@@ -108,3 +110,4 @@ volumes:
   media-data:
   caddy-data:
   caddy-config:
+  static-data:
