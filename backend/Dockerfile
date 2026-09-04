@@ -31,10 +31,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     EMBEDDING_MODEL=jinaai/jina-embeddings-v5-text-nano \
     SPARSE_MODEL=Qdrant/bm42-all-minilm-l6-v2-attentions \
     QDRANT_URL=http://localhost:6333 \
+    QDRANT_API_KEY= \
     QUERYING_MODEL=llama-3.3-70b-versatile \
     DEBUG=False \
     uv run python -c "from rag.utils.embedder import _get_model, _get_sparse_model; _get_model(); _get_sparse_model()"
-
 
 # ==========================================
 # STAGE 2: Runtime
