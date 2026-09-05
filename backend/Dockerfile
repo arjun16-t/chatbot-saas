@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    EMBEDDING_MODEL=jinaai/jina-embeddings-v5-text-nano \
+    EMBEDDING_MODEL=BAAI/bge-small-en-v1.5 \
     SPARSE_MODEL=Qdrant/bm42-all-minilm-l6-v2-attentions \
     QDRANT_URL=http://localhost:6333 \
     QDRANT_API_KEY= \
