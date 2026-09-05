@@ -57,7 +57,9 @@ RUN groupadd -g "${APP_GID}" docker-app \
 # Add the virtual environment created in Stage 1 directly to the system PATH
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
 
 # Copy the fully built /app directory (including the .venv) from the builder stage
 COPY --from=builder --chown=docker-app:docker-app /app /app
