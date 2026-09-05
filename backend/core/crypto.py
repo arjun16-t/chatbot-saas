@@ -69,6 +69,7 @@ def decrypt_groq_key(encrypted: bytes) -> str:
     try:
         decrypted_key = cipher.decrypt(encrypted)
         raw_key = decrypted_key.decode()
+        return raw_key
     except InvalidToken:
         logger.exception("The received encrypted bytes are invalid")
         raise

@@ -1,29 +1,27 @@
-from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import ValidationError
-from rest_framework.pagination import PageNumberPagination
-from rest_framework import status
-
-from rest_framework_simplejwt.authentication import JWTAuthentication
-
-from core.exceptions import ChatbotUnavailable, GroqKeyRequired, GroqKeyInvalid
-from core.permissions import ProjectDomainPermission, WidgetEnabledPermission
+# ruff : noqa: RUF012
 from core.authentication import ProjectAPIKeyAuthentication
-from core.throttling import ClientProjectThrottle
-from core.models import Project
-from core.mixins import EnvelopeResponseMixin
 from core.crypto import decrypt_groq_key
+from core.exceptions import ChatbotUnavailable, GroqKeyInvalid, GroqKeyRequired
+from core.mixins import EnvelopeResponseMixin
+from core.models import Project
+from core.permissions import ProjectDomainPermission, WidgetEnabledPermission
+from core.throttling import ClientProjectThrottle
+from cryptography.fernet import InvalidToken
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from utils.client_project import get_client_project
+from utils.logger import get_logger
+
+from rag.query import query as query_rag
 
 from .models import UnansweredQuery
 from .serializers import QuerySerializer, UnansweredQuerySerializer
-
-from cryptography.fernet import InvalidToken
-
-from rag.query import query as query_rag
-from utils.logger import get_logger
-from utils.client_project import get_client_project
 
 logger = get_logger(__name__)
 
@@ -66,8 +64,8 @@ class ChatView(APIView):
                 project_id=project_id,
                 groq_api_key=groq_api_key
             )
-        except Exception as e:
-            logger.exception(f'Query Pipeline Failed')
+        except Exception:
+            logger.exception('Query Pipeline Failed')
             raise ChatbotUnavailable()
 
         response = {
