@@ -35,6 +35,8 @@ services:
       dockerfile: backend/Dockerfile
     env_file:
       - .env
+    volumes:
+    - static-data:/app/backend/staticfiles/
     command: ["sh", "-c", "python backend/manage.py migrate && python backend/manage.py collectstatic --noinput"]
     depends_on:
       db:
