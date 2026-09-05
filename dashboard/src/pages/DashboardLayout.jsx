@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../AuthContext.jsx'
 import AthenaBotLogo from '../assets/AthenaBot.png'
 import { STATUS_META } from '../utils/documentMeta.js'
+import { useGroqKeyStatus } from '../hooks/useGroqKeyStatus.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 const POLL_INTERVAL_MS = 3000
@@ -38,6 +39,8 @@ function DashboardLayout() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
   const unsavedGuardRef = useRef(null)
+
+  const { keyStatus, isLoading: isKeyStatusLoading } = useGroqKeyStatus()
 
   const isHomeView = !projectId
   const activeProject = projects.find((p) => p.id === projectId)
@@ -357,6 +360,10 @@ function DashboardLayout() {
                 )}
               </div>
 
+              {/* API Usage gauge — commented out, real usage tracking is
+                  deferred until launch (see post-production-todo.md).
+                  Groq key status badge below replaces it. */}
+              {/*
               {isHomeView && !isSettingsView && (
                 <div className="header-gauge-card">
                   <div className="gauge-info">
@@ -365,6 +372,30 @@ function DashboardLayout() {
                     <div className="gauge-actions">
                       <button type="button" className="btn btn-secondary btn-sm">Analyse</button>
                       <button type="button" className="btn btn-primary btn-sm">Buy More</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              */}
+
+              {isHomeView && !isSettingsView && (
+                <div className="header-gauge-card">
+                  <div className="gauge-info">
+                    <span className="gauge-title">Groq API Key</span>
+                    <div className="gauge-details">
+                      <span className={`badge ${keyStatus?.is_set ? 'badge-success' : 'badge-error'}`}>
+                        <span className="badge-dot" />
+                        {isKeyStatusLoading ? 'Checking…' : keyStatus?.is_set ? 'Active' : 'Not Configured'}
+                      </span>
+                    </div>
+                    <div className="gauge-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => safeNavigate('/dashboard/settings')}
+                      >
+                        {keyStatus?.is_set ? 'Manage Key' : 'Add Key'}
+                      </button>
                     </div>
                   </div>
                 </div>

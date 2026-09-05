@@ -2,6 +2,9 @@ import { useOutletContext, useNavigate, useLocation } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import ProjectWizardModal from '../components/projectWizard/ProjectWizardModal.jsx'
+import GroqOnboardingModal from '../components/onboarding/GroqOnboardingModal.jsx'
+import ConfirmActionModal from '../components/manageProject/ConfirmActionModal.jsx'
+import { useGroqKeyStatus } from '../hooks/useGroqKeyStatus.js'
 
 function HomeView() {
   const { projects, isLoadingProjects, fetchProjects } = useOutletContext()
@@ -9,6 +12,15 @@ function HomeView() {
   const location = useLocation()
 
   const [isWizardOpen, setIsWizardOpen] = useState(false)
+
+  const { keyStatus, isLoading: isKeyStatusLoading, isSaving, saveError, saveKey } = useGroqKeyStatus()
+  const [showGroqOnboarding, setShowGroqOnboarding] = useState(false)
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false)
+  // Holds the just-created project while the onboarding prompt is
+  // open -- navigation to it is deferred until the prompt resolves,
+  // since navigating away immediately would unmount this component
+  // (and the modal along with it) before it ever renders.
+  const [pendingProject, setPendingProject] = useState(null)
 
   useEffect(() => {
     if (location.state?.justRegistered || location.state?.openWizard) {
@@ -20,7 +32,40 @@ function HomeView() {
   async function handleWizardCreated(project) {
     setIsWizardOpen(false)
     await fetchProjects()
+
+    // First-time-only prompt: only fires if no Groq key has ever been
+    // set. Once is_set is true, this never shows again on any future
+    // project creation.
+    if (!isKeyStatusLoading && keyStatus && !keyStatus.is_set) {
+      setPendingProject(project)
+      setShowGroqOnboarding(true)
+      return
+    }
+
     navigate(`/dashboard/projects/${project.id}`)
+  }
+
+  async function handleSaveGroqKey(value) {
+    const success = await saveKey(value)
+    if (success) {
+      setShowGroqOnboarding(false)
+      if (pendingProject) navigate(`/dashboard/projects/${pendingProject.id}`)
+    }
+  }
+
+  function handleSkipOnboarding() {
+    setShowGroqOnboarding(false)
+    setShowSkipConfirm(true)
+  }
+
+  function handleGoBackFromSkip() {
+    setShowSkipConfirm(false)
+    setShowGroqOnboarding(true)
+  }
+
+  function handleConfirmSkip() {
+    setShowSkipConfirm(false)
+    if (pendingProject) navigate(`/dashboard/projects/${pendingProject.id}`)
   }
 
   return (
@@ -57,6 +102,24 @@ function HomeView() {
           onCreated={handleWizardCreated}
         />
       )}
+
+      <GroqOnboardingModal
+        isOpen={showGroqOnboarding}
+        isSaving={isSaving}
+        saveError={saveError}
+        onSave={handleSaveGroqKey}
+        onSkip={handleSkipOnboarding}
+      />
+
+      <ConfirmActionModal
+        isOpen={showSkipConfirm}
+        title="Skip Groq Key Setup?"
+        message="Without a Groq API key, your chatbot won't be able to respond to any messages. You can add one later from Account Settings."
+        confirmLabel="Skip Anyway"
+        cancelLabel="Go Back"
+        onConfirm={handleConfirmSkip}
+        onCancel={handleGoBackFromSkip}
+      />
     </section>
   )
 }
