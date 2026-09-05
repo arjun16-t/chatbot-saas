@@ -1,10 +1,10 @@
-from django.conf import settings
 from cryptography.fernet import Fernet, InvalidToken
-
 from decouple import AutoConfig
+from django.conf import settings
+from utils.logger import get_logger
+
 config = AutoConfig(search_path=settings.BASE_DIR.parent)
 
-from utils.logger import get_logger
 logger = get_logger(__name__)
 
 _fernet = None
@@ -40,7 +40,7 @@ def encrypt_groq_key(raw_key: str) -> bytes:
     raw_key = raw_key.encode()
     encrypted_key = cipher.encrypt(raw_key)
 
-    return encrypted_key
+    return encrypted_key.decode('utf-8')
 
 
 def decrypt_groq_key(encrypted: bytes) -> str:

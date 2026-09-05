@@ -1,50 +1,51 @@
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.serializers import ValidationError
-from rest_framework.exceptions import PermissionDenied
-
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
-
-from django.db import transaction, IntegrityError
-from django.db.models import Count
-from django.core.validators import EmailValidator
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils import timezone
-
-import secrets
+# ruff: noqa: RUF012
 import hashlib
-from urllib.parse import urlparse
+import secrets
 from datetime import timedelta
+from urllib.parse import urlparse
 
-from .models import Project, Client, OTPVerification
-from .serializers import (
-    ClientSerializer,
-    ClientProfileSerializer,
-    ChangePasswordSerializer,
-    ProjectSerializer,
-    CustomTokenSerializer,
-    ProjectThemeConfigSerializer,
-    ProjectDetailSerializer,
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import EmailValidator
+from django.db import IntegrityError, transaction
+from django.db.models import Count
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
 )
-from .permissions import ProjectDomainPermission
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from utils.client_project import get_client_project, get_owned_project
+from utils.custom_responses import success_response
+from utils.logger import get_logger
+from utils.otp import create_and_send_otp
+from utils.token_obtain import set_refresh_cookie
+from utils.validators import validate_groq_key
+
 from .authentication import ProjectAPIKeyAuthentication
-from .tasks import delete_project_task
 from .crypto import encrypt_groq_key
 from .mixins import EnvelopeResponseMixin
-
-from utils.logger import get_logger
-from utils.token_obtain import set_refresh_cookie
-from utils.client_project import get_client_project, get_owned_project
-from utils.otp import create_and_send_otp
-from utils.validators import validate_groq_key
-from utils.custom_responses import success_response
+from .models import Client, OTPVerification, Project
+from .permissions import ProjectDomainPermission
+from .serializers import (
+    ChangePasswordSerializer,
+    ClientProfileSerializer,
+    ClientSerializer,
+    CustomTokenSerializer,
+    ProjectDetailSerializer,
+    ProjectSerializer,
+    ProjectThemeConfigSerializer,
+)
+from .tasks import delete_project_task
 
 logger = get_logger(__name__)
 
@@ -54,7 +55,7 @@ class SendOTPView(APIView):
     Body: {email}
     Rejects if a Client with this email already exists.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  
 
     def post(self, request):
         email = request.data.get("email")
@@ -76,7 +77,7 @@ class SendOTPView(APIView):
             status=status.HTTP_409_CONFLICT
         )
 
-        otp_row = create_and_send_otp(email)
+        create_and_send_otp(email)
         return Response({
             "success": True,
             "message": "OTP Generated Successfully.",
@@ -233,7 +234,7 @@ class RegisterClientView(APIView):
         
         with transaction.atomic():
             client = serializer.save()
-            logger.info(f'Client Object Registered: {str(client.id)} ({client.email})')
+            logger.info(f'Client Object Registered: {client.id!s} ({client.email})')
         
         refresh = RefreshToken.for_user(client)
         response = Response(
@@ -460,7 +461,7 @@ class ProjectListCreateView(ListCreateAPIView):
                 {"domain": f"A project with this domain already exists for your account. {e}"}
             )
 
-        logger.info(f'New Project created: {project.name} for Client: {str(project.client_id)}')
+        logger.info(f'New Project created: {project.name} for Client: {project.client_id!s}')
         
         return Response(
             {
