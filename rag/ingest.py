@@ -12,29 +12,26 @@ Usage:
     result = ingest("path/to/doc.pdf", "client_123")
 """
 
-import json
 from datetime import datetime
 from pathlib import Path
-from qdrant_client import QdrantClient
 
-from rag.config import QDRANT_URL, QDRANT_API_KEY, EMBEDDING_MODEL, DEBUG, Colors
+from rag.config import DEBUG, EMBEDDING_MODEL, Colors
+from rag.utils.chunker import chunk_text
 from rag.utils.pdf import (
-    validate_file,
-    generate_filename,
-    generate_doc_id,
     compute_file_hash,
     extract_text,
+    generate_doc_id,
+    generate_filename,
     save_metadata,
-    cleanup_on_failure
+    validate_file,
 )
-from rag.utils.chunker import chunk_text
 from rag.utils.qdrant import (
-    get_or_create_collection,
     add_points,
-    remove_points,
+    get_or_create_collection,
     get_qdrant_client,
-    update_metadata as update_qdrant_metadata
+    remove_points,
 )
+from rag.utils.qdrant import update_metadata as update_qdrant_metadata
 
 client = get_qdrant_client()
 
@@ -126,9 +123,7 @@ def ingest(file_path: str | Path, client_id: str, project_id: str) -> dict:
         result["filename"] = filename
 
         # --- ENSURE COLLECTION EXISTS ---
-        collection = get_or_create_collection(client=client)
-        if DEBUG:
-            print(f'{Colors.LIGHT_PURPLE} ===== COLLECTION INFO ===== \n{collection}{Colors.END}')
+        get_or_create_collection(client=client)
 
         # --- TEXT EXTRACTION ---
         text, page_metadata = extract_text(file_path_obj)

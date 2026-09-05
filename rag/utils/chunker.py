@@ -7,6 +7,7 @@ overlapping chunks suitable for embedding and vector storage.
 """
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from rag.config import CHUNK_SIZE, OVERLAP
 
 

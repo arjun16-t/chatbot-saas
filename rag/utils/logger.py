@@ -1,17 +1,19 @@
-import logging
 import json
-from rich.logging import RichHandler
+import logging
+from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
-from rag.config import DEBUG
 from pathlib import Path
-from datetime import datetime, timezone
+
+from rich.logging import RichHandler
+
+from rag.config import DEBUG
 
 _CONFIGURED = False
 
 class JSONFormatter(logging.Formatter):
     def format(self, record):
         log = {
-            "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "module": record.module,

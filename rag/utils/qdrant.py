@@ -7,32 +7,40 @@ retrieval, and metadata updates.
 
 Multi-tenancy strategy: shared collection with client_id payload filtering.
 Each client's chunks are isolated via client_id field in point payloads.
-
-# TODO (future): Implement Qdrant tiered multi-tenancy for high-traffic
-#                premium clients when traffic patterns warrant it.
-
-# TODO: jina-embeddings-v5-text-nano is CC BY-NC 4.0 (non-commercial)
-# Switch to bge-small-en-v1.5 (Apache 2.0) before commercial launch
-# or obtain commercial license from Jina AI
 """
 
-from qdrant_client import QdrantClient, models
-from qdrant_client.models import (
-    VectorParams, Distance, PointStruct,
-    Filter, FilterSelector, FieldCondition, MatchValue,
-    PayloadSchemaType,
-    SparseVectorParams, SparseVector,
-    HnswConfigDiff, CollectionInfo,
-    Prefetch, FusionQuery, Fusion
-)
-from rag.utils.embedder import embed_batch, embed_text, embed_sparse_batch, embed_sparse
-from rag.config import (
-    QDRANT_COLLECTION_NAME, QDRANT_URL, QDRANT_API_KEY,
-    VECTOR_SIZE, DEBUG, PREFETCH_LIMIT,
-    CHUNK_SIZE, OVERLAP, Colors
-)
-from typing import Optional
 import uuid
+
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    CollectionInfo,
+    Distance,
+    FieldCondition,
+    Filter,
+    FilterSelector,
+    Fusion,
+    FusionQuery,
+    HnswConfigDiff,
+    MatchValue,
+    PayloadSchemaType,
+    PointStruct,
+    Prefetch,
+    SparseVectorParams,
+    VectorParams,
+)
+
+from rag.config import (
+    CHUNK_SIZE,
+    DEBUG,
+    OVERLAP,
+    PREFETCH_LIMIT,
+    QDRANT_API_KEY,
+    QDRANT_COLLECTION_NAME,
+    QDRANT_URL,
+    VECTOR_SIZE,
+    Colors,
+)
+from rag.utils.embedder import embed_batch, embed_sparse, embed_sparse_batch, embed_text
 
 # Module-level Qdrant client — created once, reused across all calls
 _qdrant_client = None
@@ -139,7 +147,7 @@ def delete_collection(client: QdrantClient) -> None:
         print(f"{Colors.GREEN} Aborted! {Colors.END}")
         return
     
-    name = input(f"Type collection name to confirm: ").strip()
+    name = input("Type collection name to confirm: ").strip()
     if QDRANT_COLLECTION_NAME != name:
         print(f"{Colors.RED} Incorrect Collection Name. Aborted! {Colors.END}")
         return
@@ -164,7 +172,7 @@ def add_points(
     doc_id: str,
     client_id: str,
     project_id: str,
-    page_metadata: Optional[list[dict]] = None
+    page_metadata: list[dict] | None = None
 ) -> int:
     """
     Embeds text chunks and upserts them as points into Qdrant.
@@ -567,7 +575,7 @@ def get_collection_info(client: QdrantClient) -> list:
 
 def _get_page_for_chunk(
     chunk_index: int,
-    page_metadata: Optional[list[dict]]
+    page_metadata: list[dict] | None
 ) -> int:
     """
     Approximates the page number for a given chunk using character

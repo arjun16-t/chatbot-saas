@@ -5,21 +5,20 @@ Handles file validation, text extraction, metadata management,
 and cleanup for the AthenaChat RAG ingestion pipeline.
 """
 
-import json
 import hashlib
+import json
 import re
 import uuid
-from pathlib import Path
 from datetime import datetime
-from typing import Tuple, Optional
+from pathlib import Path
 
 import pymupdf4llm
 from docx import Document
 
-from rag.config import SUPPORTED_FORMATS, MAX_FILE_SIZE_BYTES
+from rag.config import MAX_FILE_SIZE_BYTES, SUPPORTED_FORMATS
 
 
-def validate_file(file_path: str | Path) -> Tuple[bool, Optional[str]]:
+def validate_file(file_path: str | Path) -> tuple[bool, str | None]:
     """
     Validates a file before processing it in the ingestion pipeline.
 
@@ -93,7 +92,7 @@ def compute_file_hash(file_path: str | Path) -> str:
     return file_hash.hexdigest()
 
 
-def extract_text(file_path: str | Path) -> Tuple[str, list]:
+def extract_text(file_path: str | Path) -> tuple[str, list]:
     """
     Extracts text content from a file and returns it as a single string.
 
@@ -166,7 +165,7 @@ def save_metadata(metadata: dict, storage_path: str) -> None:
         json.dump(metadata, f, indent=2)
 
 
-def cleanup_on_failure(file_path: Optional[str] | Optional[Path], metadata_path: Optional[str]) -> None:
+def cleanup_on_failure(file_path: str | None | Path, metadata_path: str | None) -> None:
     """
     Cleans up partially processed files in case of ingestion failure.
 
@@ -191,7 +190,7 @@ def cleanup_on_failure(file_path: Optional[str] | Optional[Path], metadata_path:
 def generate_doc_id(client_id: str, original_filename: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{client_id}:{original_filename}"))
 
-def _extract_pdf(file_path: str) -> Tuple[str, list]:
+def _extract_pdf(file_path: str) -> tuple[str, list]:
     try:
         chunks = pymupdf4llm.to_markdown(file_path, page_chunks=True)
 
@@ -210,7 +209,7 @@ def _extract_pdf(file_path: str) -> Tuple[str, list]:
     except Exception as e:
         raise RuntimeError(f"Extraction failed: {e}") from e
 
-def _extract_docx(file_path: str) -> Tuple[str, list]:
+def _extract_docx(file_path: str) -> tuple[str, list]:
     try:
         doc = Document(file_path)
 
@@ -222,7 +221,7 @@ def _extract_docx(file_path: str) -> Tuple[str, list]:
     except Exception as e:
         raise RuntimeError(f"Extraction failed: {e}") from e
 
-def _extract_txt_md(file_path: str) -> Tuple[str, list]:
+def _extract_txt_md(file_path: str) -> tuple[str, list]:
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             full_text = f.read()

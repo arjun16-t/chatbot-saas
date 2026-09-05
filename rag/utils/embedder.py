@@ -9,16 +9,16 @@ Model: configured via EMBEDDING_MODEL in config.py
        default: jinaai/jina-embeddings-v5-text-nano
 """
 
-from sentence_transformers import SentenceTransformer
-from rag.config import EMBEDDING_MODEL, SPARSE_MODEL, DEBUG, MODELS_CACHE_DIR, Colors
-from typing import Optional
 from fastembed import SparseTextEmbedding
 from qdrant_client.models import SparseVector
+from sentence_transformers import SentenceTransformer
+
+from rag.config import DEBUG, EMBEDDING_MODEL, MODELS_CACHE_DIR, SPARSE_MODEL, Colors
 
 # Module-level model instance — loaded once, reused across calls
 # Avoids reloading the model on every function call (expensive)
-_model: Optional[SentenceTransformer] = None
-_sparse_model: Optional[SparseTextEmbedding] = None
+_model: SentenceTransformer | None = None
+_sparse_model: SparseTextEmbedding | None = None
 
 def _get_model() -> SentenceTransformer:
     """
@@ -96,8 +96,8 @@ def embed_text(text: str) -> list[float]:
 
     Returns:
         list[float]: Dense vector of floats representing the text.
-                     Dimensionality determined by EMBEDDING_MODEL.
-                     e.g. jina-embeddings-v5-text-nano → 512 dims.
+                    Dimensionality determined by EMBEDDING_MODEL.
+                    e.g. jina-embeddings-v5-text-nano → 512 dims.
 
     Raises:
         RuntimeError: If embedding fails, wrapping original exception.
@@ -114,7 +114,7 @@ def embed_text(text: str) -> list[float]:
     except Exception as e:
         if DEBUG:
             print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
-        raise RuntimeError(f"Failed to embed") from e
+        raise RuntimeError("Failed to embed") from e
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
@@ -166,7 +166,7 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
     except Exception as e:
         if DEBUG:
             print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
-        raise RuntimeError(f"Failed to embed") from e
+        raise RuntimeError("Failed to embed") from e
 
 def embed_sparse_batch(texts: list[str]) -> list[SparseVector]:
     """
@@ -208,7 +208,7 @@ def embed_sparse_batch(texts: list[str]) -> list[SparseVector]:
     except Exception as e:
         if DEBUG:
             print(f"{Colors.RED} Error Occurred: {e} {Colors.END}")
-        raise RuntimeError(f"Failed to embed text") from e
+        raise RuntimeError("Failed to embed text") from e
 
 def embed_sparse(text: str) -> SparseVector:
     """

@@ -1,19 +1,21 @@
-from decouple import AutoConfig
 import os
 from pathlib import Path
+
+from decouple import AutoConfig
+
 config=AutoConfig(search_path=Path(__file__).parent.parent)
 
 # utils/embedder.py
-EMBEDDING_MODEL=config("EMBEDDING_MODEL") or None
-VECTOR_SIZE = 768       # must match embedding model output
+EMBEDDING_MODEL=config("EMBEDDING_MODEL")
+VECTOR_SIZE = 384       # must match embedding model output
 MODELS_CACHE_DIR = os.path.join(os.path.dirname(__file__), "models")
 
 # Sparse Embedding Model
-SPARSE_MODEL=config("SPARSE_MODEL") or None
+SPARSE_MODEL=config("SPARSE_MODEL")
 # utils/qdrant.py
 QDRANT_COLLECTION_NAME="rag-docs"
 QDRANT_URL=config("QDRANT_URL")
-QDRANT_API_KEY=config("QDRANT_API_KEY") or None
+QDRANT_API_KEY=config("QDRANT_API_KEY")
 
 # utils/chunker.py
 CHUNK_SIZE=1024     # 4 characters = 1 token -> 2048 = 256 tokens
@@ -21,7 +23,7 @@ OVERLAP=100         # 100 = 20 tokens
 PREFETCH_LIMIT=20
 
 GROQ_API_KEY=config("GROQ_API_KEY", default=None)
-QUERYING_MODEL=config("QUERYING_MODEL") or None
+QUERYING_MODEL=config("QUERYING_MODEL")
 
 # utils/pdf.py
 SUPPORTED_FORMATS = [".pdf", ".docx", ".txt", ".md"]
